@@ -1,0 +1,16 @@
+---
+source: tests/adapters/tool_schema.rs
+expression: snapshot
+---
+{
+  "properties": {
+    "date": {
+      "format": "date-time",
+      "type": "string"
+    },
+    "name": {
+      "type": "string"
+    }
+  },
+  "type": "object"
+}

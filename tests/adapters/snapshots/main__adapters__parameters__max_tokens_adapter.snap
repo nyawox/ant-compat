@@ -1,0 +1,5 @@
+---
+source: tests/adapters/parameters.rs
+expression: "adapter.apply(1024, &request)"
+---
+1124

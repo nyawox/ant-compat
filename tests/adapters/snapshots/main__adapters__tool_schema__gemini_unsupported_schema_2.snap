@@ -1,0 +1,27 @@
+---
+source: tests/adapters/tool_schema.rs
+expression: snapshot
+---
+{
+  "properties": {
+    "details": {
+      "properties": {
+        "age": {
+          "type": "integer"
+        },
+        "city": {
+          "type": "string"
+        },
+        "street": {
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "name": {
+      "type": "string"
+    }
+  },
+  "title": "User",
+  "type": "object"
+}

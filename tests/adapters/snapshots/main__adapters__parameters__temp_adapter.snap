@@ -1,0 +1,7 @@
+---
+source: tests/adapters/parameters.rs
+expression: "adapter.apply(Some(0.5), &request)"
+---
+Some(
+    0.99,
+)

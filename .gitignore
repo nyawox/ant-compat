@@ -1,0 +1,6 @@
+/target
+/tests/fixtures/
+/tests/adapters/snapshots/main__adapters__tools__*.snap
+/tests/adapters/snapshots/main__adapters__tools__*.snap.new
+/tests/adapters/snapshots/main__adapters__prompt__system*.snap
+/tests/adapters/snapshots/main__adapters__prompt__system*.snap.new

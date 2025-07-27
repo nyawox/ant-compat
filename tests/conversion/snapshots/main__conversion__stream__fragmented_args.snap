@@ -1,0 +1,70 @@
+---
+source: tests/conversion/stream.rs
+expression: output_events
+---
+[
+    MessageStart(
+        MessageStart {
+            message: ClaudeStreamMessage {
+                id: "[redacted-id]",
+                message_type: "message",
+                role: "assistant",
+                content: [],
+                model: "test-model",
+                stop_reason: None,
+                stop_sequence: None,
+                usage: ClaudeStreamUsage {
+                    input_tokens: 0,
+                    output_tokens: 0,
+                },
+            },
+        },
+    ),
+    ContentBlockStart(
+        ContentBlockStart {
+            index: 0,
+            content_block: ToolUse {
+                id: "id1",
+                name: "search",
+                input: Object {},
+            },
+        },
+    ),
+    ContentBlockDelta(
+        ContentBlockDelta {
+            index: 0,
+            delta: InputJson {
+                partial_json: "{\"q\":",
+            },
+        },
+    ),
+    ContentBlockDelta(
+        ContentBlockDelta {
+            index: 0,
+            delta: InputJson {
+                partial_json: "rust\"}",
+            },
+        },
+    ),
+    ContentBlockStop(
+        ContentBlockStop {
+            index: 0,
+        },
+    ),
+    MessageDelta(
+        MessageDelta {
+            delta: MessageDeltaInfo {
+                stop_reason: "tool_use",
+                stop_sequence: None,
+            },
+            usage: MessageDeltaUsage {
+                input: 0,
+                output: 0,
+                cache_read_input: None,
+            },
+        },
+    ),
+    MessageStop(
+        MessageStop,
+    ),
+]

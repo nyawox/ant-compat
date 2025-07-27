@@ -1,0 +1,154 @@
+---
+source: tests/conversion/stream.rs
+expression: output_events
+---
+[
+    MessageStart(
+        MessageStart {
+            message: ClaudeStreamMessage {
+                id: "[redacted-id]",
+                message_type: "message",
+                role: "assistant",
+                content: [],
+                model: "test-model",
+                stop_reason: None,
+                stop_sequence: None,
+                usage: ClaudeStreamUsage {
+                    input_tokens: 0,
+                    output_tokens: 0,
+                },
+            },
+        },
+    ),
+    ContentBlockStart(
+        ContentBlockStart {
+            index: 0,
+            content_block: ToolUse {
+                id: "id1",
+                name: "tool1",
+                input: Object {},
+            },
+        },
+    ),
+    ContentBlockDelta(
+        ContentBlockDelta {
+            index: 0,
+            delta: InputJson {
+                partial_json: "{\"arg\":\"value1\"}",
+            },
+        },
+    ),
+    ContentBlockStop(
+        ContentBlockStop {
+            index: 0,
+        },
+    ),
+    ContentBlockStart(
+        ContentBlockStart {
+            index: 1,
+            content_block: ToolUse {
+                id: "id2",
+                name: "tool2",
+                input: Object {},
+            },
+        },
+    ),
+    ContentBlockDelta(
+        ContentBlockDelta {
+            index: 1,
+            delta: InputJson {
+                partial_json: "{\"arg\":\"value2\"}",
+            },
+        },
+    ),
+    ContentBlockStop(
+        ContentBlockStop {
+            index: 1,
+        },
+    ),
+    ContentBlockStart(
+        ContentBlockStart {
+            index: 2,
+            content_block: ToolUse {
+                id: "id3",
+                name: "tool3",
+                input: Object {},
+            },
+        },
+    ),
+    ContentBlockDelta(
+        ContentBlockDelta {
+            index: 2,
+            delta: InputJson {
+                partial_json: "{\"arg\":\"value3\"}",
+            },
+        },
+    ),
+    ContentBlockStop(
+        ContentBlockStop {
+            index: 2,
+        },
+    ),
+    ContentBlockStart(
+        ContentBlockStart {
+            index: 3,
+            content_block: ToolUse {
+                id: "id4",
+                name: "tool4",
+                input: Object {},
+            },
+        },
+    ),
+    ContentBlockDelta(
+        ContentBlockDelta {
+            index: 3,
+            delta: InputJson {
+                partial_json: "{\"arg\":\"value4\"}",
+            },
+        },
+    ),
+    ContentBlockStop(
+        ContentBlockStop {
+            index: 3,
+        },
+    ),
+    ContentBlockStart(
+        ContentBlockStart {
+            index: 4,
+            content_block: ToolUse {
+                id: "id5",
+                name: "tool5",
+                input: Object {},
+            },
+        },
+    ),
+    ContentBlockDelta(
+        ContentBlockDelta {
+            index: 4,
+            delta: InputJson {
+                partial_json: "{\"arg\":\"value5\"}",
+            },
+        },
+    ),
+    ContentBlockStop(
+        ContentBlockStop {
+            index: 4,
+        },
+    ),
+    MessageDelta(
+        MessageDelta {
+            delta: MessageDeltaInfo {
+                stop_reason: "tool_use",
+                stop_sequence: None,
+            },
+            usage: MessageDeltaUsage {
+                input: 0,
+                output: 0,
+                cache_read_input: None,
+            },
+        },
+    ),
+    MessageStop(
+        MessageStop,
+    ),
+]

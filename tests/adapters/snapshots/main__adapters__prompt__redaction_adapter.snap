@@ -1,0 +1,5 @@
+---
+source: tests/adapters/prompt.rs
+expression: result
+---
+GEMINI_API_KEY=[REDACTED]
