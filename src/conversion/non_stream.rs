@@ -6,22 +6,22 @@ pub fn convert_openai_to_claude(openai_response: &Value, model: &str) -> Value {
     let message = &choice["message"];
     let mut content_blocks = Vec::new();
 
-    // I could not figure out how to get reasoning working for non-streaming
-    // PR welcome :)
+    if let Some(reasoning) = message["reasoning_content"]
+        .as_str()
+        .filter(|s| !s.is_empty())
+    {
+        content_blocks.push(json!({
+            "type": "thinking",
+            "thinking": reasoning,
+        }));
+    }
 
-    // if let Some(reasoning) = message["reasoning"].as_str().filter(|s| !s.is_empty()) {
-    //     content_blocks.push(json!({
-    //         "type": "thinking",
-    //         "thinking": reasoning,
-    //     }));
-    // }
-
-    // if let Some(content) = message["content"].as_str().filter(|s| !s.is_empty()) {
-    //     content_blocks.push(json!({
-    //         "type": "text",
-    //         "text": content
-    //     }));
-    // }
+    if let Some(content) = message["content"].as_str().filter(|s| !s.is_empty()) {
+        content_blocks.push(json!({
+            "type": "text",
+            "text": content
+        }));
+    }
 
     if let Some(tool_calls) = message["tool_calls"].as_array() {
         for tool_call in tool_calls {
