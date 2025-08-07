@@ -3,35 +3,36 @@ use bytes::Bytes;
 use futures_util::stream::{Stream, StreamExt};
 use serde_json::{Map, Value, json};
 use std::{
-    collections::HashMap,
-    time::{Duration, SystemTime, UNIX_EPOCH},
+    pin::Pin,
+    time::{SystemTime, UNIX_EPOCH},
 };
-use tokio::time;
 use tracing::{debug, error};
 
-use crate::models::{
-    claude::FinishReason,
-    claude::{
-        AnthropicStreamEvent, ClaudeStreamMessage, ClaudeStreamUsage, ContentBlock,
-        ContentBlockDelta, ContentBlockStart, ContentBlockStop, Delta, MessageDelta,
-        MessageDeltaInfo, MessageStart, MessageStop,
+use crate::{
+    adapters::RequestAdapter,
+    models::{
+        claude::{
+            AnthropicStreamEvent, ClaudeMessagesRequest, ClaudeStreamMessage, ClaudeStreamUsage,
+            ContentBlock, ContentBlockDelta, ContentBlockStart, ContentBlockStop, Delta,
+            FinishReason, MessageDelta, MessageDeltaInfo, MessageStart, MessageStop,
+        },
+        openai::{OpenAIDelta, OpenAIStreamChoice, OpenAIStreamChunk, OpenAIStreamToolCall},
+        shared::{ActiveState, StreamState},
     },
-    openai::{OpenAIDelta, OpenAIStreamChoice, OpenAIStreamChunk, OpenAIStreamToolCall},
-    shared::{ActiveState, MessageDeltaUsage, StreamState},
 };
 
-fn emit_event(event_type: &str, data: &impl serde::Serialize) -> Bytes {
+pub fn emit_event(event_type: &str, data: &impl serde::Serialize) -> Bytes {
     let data_str = serde_json::to_string(data).unwrap_or_default();
     debug!("Emitting event: {event_type}, data: {data_str}");
     Bytes::from(format!("event: {event_type}\ndata: {data_str}\n\n"))
 }
 
-fn emit_ping() -> Bytes {
+pub fn emit_ping() -> Bytes {
     debug!("Emitting ping event");
     emit_event("ping", &json!({"type": "ping"}))
 }
 
-fn emit_initial_events(state: &StreamState) -> Vec<AnthropicStreamEvent> {
+pub fn emit_initial_events(state: &StreamState) -> Vec<AnthropicStreamEvent> {
     debug!("Emitting initial events for message: {}", state.message_id);
     vec![AnthropicStreamEvent::MessageStart(MessageStart {
         message: ClaudeStreamMessage {
@@ -50,7 +51,8 @@ fn emit_initial_events(state: &StreamState) -> Vec<AnthropicStreamEvent> {
     })]
 }
 
-fn emit_final_events(
+#[must_use]
+pub fn emit_final_events(
     current_state: ActiveState,
     context: &StreamState,
     finish_reason: &str,
@@ -102,7 +104,7 @@ fn generate_unique_id(prefix: &str, index: u32) -> String {
     format!("{prefix}_{timestamp}_{index}")
 }
 
-fn update_usage_from_chunk(chunk: &OpenAIStreamChunk, state: &mut StreamState) {
+pub fn update_usage_from_chunk(chunk: &OpenAIStreamChunk, state: &mut StreamState) {
     let usage = &chunk.usage;
     state.usage_data.input = usage.prompt_tokens;
     state.usage_data.output = usage.completion_tokens;
@@ -117,7 +119,7 @@ fn update_usage_from_chunk(chunk: &OpenAIStreamChunk, state: &mut StreamState) {
     );
 }
 
-fn handle_tool_calls_delta(
+pub fn handle_tool_calls_delta(
     tool_calls_delta: &[OpenAIStreamToolCall],
     state: &mut StreamState,
 ) -> Vec<AnthropicStreamEvent> {
@@ -200,153 +202,135 @@ fn handle_tool_calls_delta(
     events
 }
 
+#[must_use]
 pub fn convert_openai_stream_to_anthropic(
     response: reqwest::Response,
-    model: String,
-) -> impl Stream<Item = Result<Bytes, std::io::Error>> {
+    model: &str,
+    adapter: &RequestAdapter,
+    request: &ClaudeMessagesRequest,
+) -> Pin<Box<dyn Stream<Item = Result<Bytes, std::io::Error>> + Send>> {
+    let byte_stream = response.bytes_stream();
+    let chunk_stream = bytes_to_chunks(Box::pin(byte_stream));
+    let adapted_chunk_stream = adapter.adapt_chunk_stream(Box::pin(chunk_stream), request);
+    let event_stream = chunks_to_events(model, adapted_chunk_stream);
+
+    Box::pin(stream! {
+        let mut stream = Box::pin(event_stream);
+        let mut ping_interval = tokio::time::interval(std::time::Duration::from_secs(30));
+
+        loop {
+            tokio::select! {
+                event_result = stream.next() => {
+                    if let Some(event_result) = event_result {
+                        match event_result {
+                            Ok(event) => {
+                                let (event_type, data) = event.to_parts();
+                                yield Ok(emit_event(event_type, &data));
+                            }
+                            Err(e) => {
+                                let error_event = json!({
+                                    "type": "error",
+                                    "error": { "type": "api_error", "message": e.to_string() }
+                                });
+                                yield Ok(emit_event("error", &error_event));
+                                yield Err(std::io::Error::other(e));
+                                break;
+                            }
+                        }
+                    } else {
+                        break;
+                    }
+                }
+                _ = ping_interval.tick() => {
+                    yield Ok(emit_ping());
+                }
+            }
+        }
+    })
+}
+
+fn bytes_to_chunks(
+    mut byte_stream: Pin<Box<dyn Stream<Item = Result<Bytes, reqwest::Error>> + Send>>,
+) -> Pin<Box<dyn Stream<Item = Result<OpenAIStreamChunk, reqwest::Error>> + Send>> {
+    Box::pin(stream! {
+        let mut stream_of_bytes = byte_stream.as_mut();
+        let mut buffer = String::new();
+
+        while let Some(chunk_result) = stream_of_bytes.next().await {
+            let chunk_bytes = match chunk_result {
+                Ok(bytes) => bytes,
+                Err(e) => { yield Err(e); break; }
+            };
+
+            buffer.push_str(&String::from_utf8_lossy(&chunk_bytes));
+            let mut lines: Vec<&str> = buffer.split('\n').collect();
+            let new_buffer = if buffer.ends_with('\n') { String::new() } else { lines.pop().unwrap_or("").to_string() };
+
+            for line in lines {
+                if !line.starts_with("data: ") { continue; }
+                let data = &line[6..];
+                if data == "[DONE]" { break; }
+                match serde_json::from_str::<OpenAIStreamChunk>(data) {
+                    Ok(chunk) => yield Ok(chunk),
+                    Err(e) => { error!("Failed to parse stream chunk: {e}, data: {data}"); }
+                }
+            }
+            buffer = new_buffer;
+        }
+    })
+}
+
+#[must_use]
+pub fn chunks_to_events(
+    model: &str,
+    mut chunk_stream: Pin<Box<dyn Stream<Item = Result<OpenAIStreamChunk, reqwest::Error>> + Send>>,
+) -> Pin<Box<dyn Stream<Item = Result<AnthropicStreamEvent, reqwest::Error>> + Send>> {
     let timestamp = SystemTime::now()
         .duration_since(UNIX_EPOCH)
         .unwrap_or_default()
         .as_millis();
     let message_id = format!("msg_{timestamp}");
 
-    stream! {
-        let mut stream_of_bytes = response.bytes_stream();
-        let mut buffer = String::new();
-        let mut state = StreamState {
-            model: model.clone(),
-            message_id: message_id.clone(),
-            state: ActiveState::NotStarted,
-            usage_data: MessageDeltaUsage::default(),
-            next_content_index: 0,
-            tool_calls: HashMap::new(),
-            tool_index: None,
-        };
-
-        debug!("Starting stream conversion for model: {model}");
-
-        for initial_event in emit_initial_events(&state) {
-            let (event_type, data) = initial_event.to_parts();
-            yield Ok(emit_event(event_type, &data));
-        }
-
-        yield Ok(emit_ping());
-
-        let mut ping_interval = time::interval(Duration::from_secs(30));
-
-        loop {
-            tokio::select! {
-                chunk_result = stream_of_bytes.next() => {
-                    let Some(chunk_result) = chunk_result else {
-                        break;
-                    };
-
-                    if let ActiveState::Finished = state.state {
-                        break;
-                    }
-
-                    let chunk_bytes = match chunk_result {
-                        Ok(bytes) => {
-                            debug!("Received chunk of size: {}", bytes.len());
-                            bytes
-                        },
-                        Err(e) => {
-                            let error_event = json!({
-                                "type": "error",
-                                "error": {
-                                    "type": "api_error",
-                                    "message": e.to_string()
-                                }
-                            });
-                            yield Ok(emit_event("error", &error_event));
-                            yield Err(std::io::Error::other(e));
-                            break;
-                        }
-                    };
-
-                    buffer.push_str(&String::from_utf8_lossy(&chunk_bytes));
-                    let lines: Vec<&str> = buffer.split('\n').collect();
-                    let new_buffer = (*lines.last().unwrap_or(&"")).to_string();
-
-                    for line in &lines[..lines.len().saturating_sub(1)] {
-                        if let ActiveState::Finished = state.state {
-                            break;
-                        }
-
-                        if let Some(events) = process_stream_line(line, &mut state) {
-                            for event in events {
-                                let (event_type, data) = event.to_parts();
-                                yield Ok(emit_event(event_type, &data));
-                            }
-                        }
-                    }
-
-                    buffer = new_buffer;
-                }
-                _ = ping_interval.tick() => {
-                    if !matches!(state.state, ActiveState::Finished) {
-                        yield Ok(emit_ping());
-                    }
-                }
-            }
-
-            if let ActiveState::Finished = state.state {
-                break;
-            }
-        }
-    }
-}
-
-fn process_stream_line(line: &str, state: &mut StreamState) -> Option<Vec<AnthropicStreamEvent>> {
-    if !line.starts_with("data: ") {
-        debug!(
-            "Skipping non-data line: {}",
-            line.chars().take(100).collect::<String>()
-        );
-        return None;
-    }
-
-    let data = &line[6..];
-    if data == "[DONE]" {
-        debug!("Stream finished with [DONE] marker");
-        let choice = OpenAIStreamChoice {
-            delta: OpenAIDelta::default(),
-            finish_reason: Some("stop".to_string()),
-            index: 0,
-        };
-        return Some(state.process_choice(&choice));
-    }
-
-    debug!(
-        "Raw chunk data: {}",
-        data.chars().take(500).collect::<String>()
-    );
-
-    let chunk: OpenAIStreamChunk = match serde_json::from_str(data) {
-        Ok(c) => {
-            debug!("Successfully parsed OpenAI chunk: {:#?}", c);
-            c
-        }
-        Err(e) => {
-            error!(
-                "Failed to parse stream chunk: {e}, data: {}",
-                data.chars().take(200).collect::<String>()
-            );
-            return None;
-        }
+    let mut state = StreamState {
+        model: model.to_string(),
+        message_id,
+        ..Default::default()
     };
 
-    update_usage_from_chunk(&chunk, state);
-    let mut all_events = Vec::new();
-    for choice in chunk.choices {
-        all_events.extend(state.process_choice(&choice));
-    }
+    Box::pin(stream! {
+        for initial_event in emit_initial_events(&state) {
+            yield Ok(initial_event);
+        }
 
-    Some(all_events)
+        let mut stream = chunk_stream.as_mut();
+        while let Some(chunk_result) = stream.next().await {
+            let chunk = match chunk_result {
+                Ok(c) => c,
+                Err(e) => { yield Err(e); break; }
+            };
+            if let ActiveState::Finished = state.state { break; }
+            update_usage_from_chunk(&chunk, &mut state);
+            for choice in chunk.choices {
+                for event in state.process_choice(&choice) { yield Ok(event); }
+            }
+        }
+
+        if !matches!(state.state, ActiveState::Finished | ActiveState::Tool) {
+            let final_choice = OpenAIStreamChoice {
+                delta: OpenAIDelta::default(),
+                finish_reason: Some("stop".to_string()),
+                index: 0,
+            };
+            for event in state.process_choice(&final_choice) { yield Ok(event); }
+        }
+    })
 }
 
 impl StreamState {
-    fn process_choice(&mut self, choice: &OpenAIStreamChoice) -> Vec<AnthropicStreamEvent> {
+    pub(crate) fn process_choice(
+        &mut self,
+        choice: &OpenAIStreamChoice,
+    ) -> Vec<AnthropicStreamEvent> {
         let current_state = std::mem::take(&mut self.state);
         let (new_state, events) = Self::transition(current_state, choice, self);
         self.state = new_state;

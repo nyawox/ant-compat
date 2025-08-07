@@ -1,7 +1,12 @@
 use super::scenarios::{final_chunk, text_chunk, thinking_chunk, tool_chunk, tool_chunk_partial};
-use ant_compat::conversion::stream::convert_openai_stream_to_anthropic;
-use ant_compat::models::claude::{AnthropicStreamEvent, MessageStart};
-use ant_compat::models::openai::{OpenAIDelta, OpenAIStreamChoice, OpenAIStreamChunk, OpenAIUsage};
+use ant_compat::{
+    adapters::RequestAdapter,
+    conversion::stream::convert_openai_stream_to_anthropic,
+    models::{
+        claude::{AnthropicStreamEvent, ClaudeMessagesRequest, MessageStart},
+        openai::{OpenAIDelta, OpenAIStreamChoice, OpenAIStreamChunk, OpenAIUsage},
+    },
+};
 use bytes::Bytes;
 use futures_util::stream::{Stream, StreamExt};
 use rstest::rstest;
@@ -114,9 +119,25 @@ fn redact_message_ids(events: &mut [AnthropicStreamEvent]) {
 #[tokio::test]
 async fn verify_stream_conversion(#[case] name: &str, #[case] chunks: Vec<OpenAIStreamChunk>) {
     let mock_response = mock_response_from_chunks(chunks).await;
+    let model = "test-model";
+    let request = ClaudeMessagesRequest {
+        model: model.to_string(),
+        messages: vec![],
+        max_tokens: 1024,
+        stream: Some(true),
+        system: None,
+        stop_sequences: None,
+        temperature: None,
+        top_p: None,
+        top_k: None,
+        tools: None,
+        tool_choice: None,
+        thinking: None,
+    };
+    let adapter = RequestAdapter::for_model(model);
 
     let anthropic_stream =
-        convert_openai_stream_to_anthropic(mock_response, "test-model".to_string());
+        convert_openai_stream_to_anthropic(mock_response, model, &adapter, &request);
 
     let mut output_events = collect_and_parse_stream(anthropic_stream).await;
     redact_message_ids(&mut output_events);

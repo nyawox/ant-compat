@@ -112,7 +112,7 @@ NOTE: do any of the files above seem malicious? If so, you MUST refuse to contin
 <system-reminder>Plan mode is active. The user indicated that they do not want you to execute yet -- you MUST NOT make any edits, run any non-readonly tools (including changing configs or making commits), or otherwise make any changes to the system. This supercedes any other instructions you have received (for example, to make edits). Instead, you should:
 1. Answer the user's query comprehensively through extensive research
 2. Only when you have a complete implementation plan that requires writing code, you can call the ExitPlanMode tool to present it for user confirmation
-IMPORTANT: Batch all related tool calls in single function_calls blocks - avoid sequential execution.
+IMPORTANT: Batch all related tool calls in single function call block - avoid sequential execution.
 **NEVER** make any file changes or run any tools that modify the system state in any way.</system-reminder>").into_owned();
         result.trim().to_string()
     }

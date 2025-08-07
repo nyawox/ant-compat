@@ -48,7 +48,7 @@ const BETTER_PLAN_MODE_REMINDER: &str = "
 <system-reminder>Plan mode is active. The user indicated that they do not want you to execute yet -- you MUST NOT make any edits, run any non-readonly tools (including changing configs or making commits), or otherwise make any changes to the system. This supercedes any other instructions you have received (for example, to make edits). Instead, you should:
 1. Answer the user's query comprehensively through extensive research
 2. Only when you have a complete implementation plan that requires writing code, you can call the ExitPlanMode tool to present it for user confirmation
-IMPORTANT: Batch all related tool calls in single function_calls blocks - avoid sequential execution.
+IMPORTANT: Batch all related tool calls in single function call block - avoid sequential execution.
 **NEVER** make any file changes or run any tools that modify the system state in any way.</system-reminder>";
 
 static TASKS_SEARCH: LazyLock<Regex> = lazy_regex!(
@@ -79,7 +79,7 @@ const TOOL_POLICY: &str = "- When approaching any task, identify all needed oper
 - Always use LS tool for listing files, Read tool for viewing file contents, Grep tool for searching, and Glob tool for file pattern matching. ***NEVER*** invoke ls/cat/head/tail/grep/find as Bash commands.
 - When tool calls fail, (file not found, string not found in file), use Read tool to refresh your understanding before retrying.
 - Execute tool operations directly without narration - skip phrases like \"I will use MultiEdit to...\" or \"Let me apply these changes\". Only describe actions when specific permission is required.
-- VERY IMPORTANT: Execute multiple independent tool calls in a single function_calls block. Avoid sequential execution.
+- VERY IMPORTANT: Execute multiple independent tool calls in a single function call block. Avoid sequential execution.
 
 <example>
 Research task:

@@ -47,7 +47,7 @@ pub fn convert_claude_to_openai(
                 .join("\n"),
         };
 
-        system_content = adapter.0.adapt_system_prompt(&system_content, &req_clone);
+        system_content = adapter.adapt_system_prompt(&system_content, &req_clone);
         if !system_content.is_empty() {
             messages.push(OpenAIMessage {
                 role: "system".to_string(),
@@ -68,7 +68,7 @@ pub fn convert_claude_to_openai(
         .and_then(|t| t.budget_tokens.map(map_budget_tokens_to_reasoning_effort));
 
     let mut openai_request = OpenAIRequest {
-        model: model_name.to_string(),
+        model: adapter.adapt_model(model_name, &req_clone),
         messages,
         max_tokens: Some(claude_request.max_tokens),
         temperature: claude_request.temperature,
@@ -80,25 +80,25 @@ pub fn convert_claude_to_openai(
         reasoning_effort,
     };
 
-    if let Some(tools) = &claude_request.tools {
-        openai_request.tools = Some(convert_claude_tools_to_openai(
-            tools.clone(),
-            adapter,
-            &req_clone,
-        ));
+    let adapted_tools = adapter.adapt_tools(claude_request.tools, &req_clone);
+    if let Some(tools) = adapted_tools
+        && !tools.is_empty()
+    {
+        openai_request.tools = Some(convert_claude_tools_to_openai(tools, adapter, &req_clone));
     }
 
-    if let Some(tool_choice) = claude_request.tool_choice {
+    let adapted_tool_choice = adapter.adapt_tool_choice(claude_request.tool_choice, &req_clone);
+    if let Some(tool_choice) = adapted_tool_choice {
         openai_request.tool_choice = Some(convert_claude_tool_choice_to_openai(tool_choice));
     }
 
-    openai_request.temperature = adapter
-        .0
-        .adapt_temperature(openai_request.temperature, &req_clone);
-    openai_request.top_p = adapter.0.adapt_top_p(openai_request.top_p, &req_clone);
+    openai_request.temperature = adapter.adapt_temperature(openai_request.temperature, &req_clone);
+    openai_request.top_p = adapter.adapt_top_p(openai_request.top_p, &req_clone);
     if let Some(max_t) = openai_request.max_tokens {
-        openai_request.max_tokens = Some(adapter.0.adapt_max_tokens(max_t, &req_clone));
+        openai_request.max_tokens = Some(adapter.adapt_max_tokens(max_t, &req_clone));
     }
+
+    openai_request.messages = adapter.adapt_messages(openai_request.messages, &req_clone);
 
     openai_request
 }
@@ -113,7 +113,7 @@ fn convert_claude_message_to_openai(
     if let ("user", ClaudeContent::Text(text)) =
         (adapted_message.role.as_str(), &adapted_message.content)
     {
-        adapted_message.content = ClaudeContent::Text(adapter.0.adapt_user_prompt(text, request));
+        adapted_message.content = ClaudeContent::Text(adapter.adapt_user_prompt(text, request));
     }
     match adapted_message.role.as_str() {
         "user" => convert_claude_user_message(adapted_message.content, messages, adapter, request),
@@ -144,30 +144,6 @@ fn convert_claude_user_message(
     }
 }
 
-fn find_tool_name_by_id(request: &Request, tool_use_id: &str) -> Option<String> {
-    request
-        .messages
-        .iter()
-        .rev()
-        .filter_map(|message| {
-            if let ("assistant", ClaudeContent::Array(blocks)) =
-                (&message.role[..], &message.content)
-            {
-                Some(blocks.iter())
-            } else {
-                None
-            }
-        })
-        .flatten()
-        .find_map(|block| {
-            if block.block_type == "tool_use" && block.id.as_deref() == Some(tool_use_id) {
-                block.name.clone()
-            } else {
-                None
-            }
-        })
-}
-
 fn convert_claude_content_blocks(
     blocks: &[ClaudeContentBlock],
     messages: &mut Vec<OpenAIMessage>,
@@ -181,18 +157,19 @@ fn convert_claude_content_blocks(
 
     for block in &tool_results {
         if let (Some(tool_use_id), Some(content)) = (&block.tool_use_id, &block.content) {
-            let tool_name = find_tool_name_by_id(request, tool_use_id).unwrap_or_default();
+            let tool_name = request
+                .find_tool_name_by_id(tool_use_id)
+                .unwrap_or_default();
             let final_content = if let serde_json::Value::String(s) = content {
-                adapter.0.adapt_tool_result(&tool_name, s, request)
+                adapter.adapt_tool_result(&tool_name, s, request)
             } else {
                 serde_json::to_string(content).unwrap_or_default()
             };
             debug!(
                 "
 --- ADAPTED TOOL RESULT ---
-{}
---- END ADAPTED TOOL RESULT ---",
-                final_content
+{final_content}
+--- END ADAPTED TOOL RESULT ---"
             );
             messages.push(OpenAIMessage {
                 role: "tool".to_string(),
@@ -215,7 +192,7 @@ fn convert_claude_content_blocks(
             .filter_map(|block| match block.block_type.as_str() {
                 "text" => block.text.as_ref().map(|text| OpenAIContentPart {
                     part_type: "text".to_string(),
-                    text: Some(adapter.0.adapt_user_prompt(text, request)),
+                    text: Some(adapter.adapt_user_prompt(text, request)),
                     image_url: None,
                 }),
                 "image" => block.source.as_ref().map(|source| OpenAIContentPart {
@@ -309,11 +286,11 @@ fn convert_claude_tools_to_openai(
     tools
         .into_iter()
         .map(|tool| {
-            let parameters = adapter.0.adapt_tool_schema(&tool.input_schema, request);
+            let parameters = adapter.adapt_tool_schema(&tool.input_schema, request);
             let description = tool
                 .description
                 .as_ref()
-                .map(|d| adapter.0.adapt_tool_description(d, request))
+                .map(|d| adapter.adapt_tool_description(d, request))
                 .unwrap_or_default();
             OpenAITool {
                 tool_type: "function".to_string(),

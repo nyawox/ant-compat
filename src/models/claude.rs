@@ -63,6 +63,32 @@ pub enum ClaudeSystem {
     Array(Vec<ClaudeContentBlock>),
 }
 
+impl ClaudeMessagesRequest {
+    #[must_use]
+    pub fn find_tool_name_by_id(&self, tool_use_id: &str) -> Option<String> {
+        self.messages
+            .iter()
+            .rev()
+            .filter_map(|message| {
+                if let ("assistant", ClaudeContent::Array(blocks)) =
+                    (&message.role[..], &message.content)
+                {
+                    Some(blocks.iter())
+                } else {
+                    None
+                }
+            })
+            .flatten()
+            .find_map(|block| {
+                if block.block_type == "tool_use" && block.id.as_deref() == Some(tool_use_id) {
+                    block.name.clone()
+                } else {
+                    None
+                }
+            })
+    }
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ClaudeMessagesRequest {
     pub model: String,

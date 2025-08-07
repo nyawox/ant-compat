@@ -7,6 +7,8 @@ This is a Rust-based API compatibility layer that translates between Anthropic's
 ### Building and Running
 
 ```bash
+# Note: ALWAYS use clippy for code validation instead of building the entire project
+
 # Build the project (REQUIRED - never use cargo build)
 nix build
 

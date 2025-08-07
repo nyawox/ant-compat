@@ -110,7 +110,7 @@ pub struct OpenAIRequest {
     pub reasoning_effort: Option<String>,
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct OpenAIStreamChunk {
     pub id: String,
     #[serde(deserialize_with = "deserialize_null_as_default")]
@@ -120,14 +120,14 @@ pub struct OpenAIStreamChunk {
     pub usage: OpenAIUsage,
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct OpenAIStreamChoice {
     pub index: u32,
     pub delta: OpenAIDelta,
     pub finish_reason: Option<String>,
 }
 
-#[derive(Debug, Serialize, Deserialize, Default)]
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
 pub struct OpenAIDelta {
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub content: Option<String>,
@@ -139,7 +139,7 @@ pub struct OpenAIDelta {
     pub reasoning: Option<String>,
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
 pub struct OpenAIStreamToolCall {
     pub index: u32,
     pub id: Option<String>,
@@ -148,13 +148,13 @@ pub struct OpenAIStreamToolCall {
     pub function: Option<OpenAIStreamFunction>,
 }
 
-#[derive(Debug, Serialize, Deserialize, Default)]
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
 pub struct OpenAIStreamFunction {
     pub name: Option<String>,
     pub arguments: Option<String>,
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct OpenAIStreamThinking {
     pub content: Option<String>,
     pub signature: Option<String>,

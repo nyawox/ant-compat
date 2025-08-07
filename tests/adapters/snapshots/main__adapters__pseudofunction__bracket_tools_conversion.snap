@@ -1,0 +1,69 @@
+---
+source: tests/adapters/pseudofunction.rs
+expression: "&result"
+---
+OpenAIRequest {
+    model: "google/gemini-2.5-pro",
+    messages: [
+        OpenAIMessage {
+            role: "system",
+            content: Some(
+                Text(
+                    "You have access to a set of tools to answer questions and complete tasks. Invoke them at the end of your response using this format:\n\n---TOOLS---\n[tool(ToolName, parameter=\"value\", another_parameter=\"value\")]\n[tool(AnotherTool, param1=\"value1\", param2=\"value2\")]\n[tool(ThirdTool, param=\"value\")]\n[tool(FourthTool, setting=\"value\", option=\"value\")]\n---END_TOOLS---\n\n## Rules\n- Place tool calls at the very end of your response, after a '---TOOLS---' separator\n- Each tool call must be on a new line\n- All parameter values must use double quotes\n- For multi-line content or strings with quotes, use triple quotes: \"\"\"content\"\"\"\n- Arrays and objects: wrap JSON payload in triple quotes: \"\"\"[...]\"\"\" or \"\"\"{\"properties\":{\"location\":{\"description\":\"The city and state, e.g. San Francisco, CA\",\"type\":\"string\"}},\"required\":[\"location\"],\"type\":\"object\"}\"\"\"\n- When possible, use parallel tool calls to perform multiple independent operations\n\n## Examples\n\nReading multiple files:\n---TOOLS---\n[tool(Read, file_path=\"/home/user/project/config.yaml\")]\n[tool(Read, file_path=\"/home/user/project/data.csv\")]\n[tool(Read, file_path=\"/home/user/project/settings.ini\")]\n---END_TOOLS---\n\nWriting todos with complex data:\n---TOOLS---\n[tool(TodoWrite, todos=\"\"\"[{\"id\": \"1\", \"content\": \"Review PR\", \"status\": \"pending\"}]\"\"\")]\n---END_TOOLS---\n\nMultiple tools:\n---TOOLS---\n[tool(Read, file_path=\"/config.json\")]\n[tool(TodoWrite, todos=\"\"\"[{\"id\": \"2\", \"content\": \"Update config\", \"priority\": \"high\"}]\"\"\")]\n---END_TOOLS---\n\n## Available Tools\n{\"properties\":{\"location\":{\"description\":\"The city and state, e.g. San Francisco, CA\",\"type\":\"string\"}},\"required\":[\"location\"],\"type\":\"object\"}\n\nYou are a helpful assistant.",
+                ),
+            ),
+            tool_calls: None,
+            tool_call_id: None,
+            reasoning: None,
+        },
+        OpenAIMessage {
+            role: "user",
+            content: Some(
+                Text(
+                    "What is the weather like in San Francisco?",
+                ),
+            ),
+            tool_calls: None,
+            tool_call_id: None,
+            reasoning: None,
+        },
+        OpenAIMessage {
+            role: "assistant",
+            content: Some(
+                Text(
+                    "I'll get the weather for you.\n\n---TOOLS---\n[tool(get_weather, location=\"San Francisco\")]\n---END_TOOLS---",
+                ),
+            ),
+            tool_calls: None,
+            tool_call_id: None,
+            reasoning: None,
+        },
+        OpenAIMessage {
+            role: "user",
+            content: Some(
+                Text(
+                    "[tool_result(name=\"get_weather\")]\n{\"temperature\":\"72F\"}\n[/tool_result]",
+                ),
+            ),
+            tool_calls: None,
+            tool_call_id: None,
+            reasoning: None,
+        },
+    ],
+    max_tokens: Some(
+        65536,
+    ),
+    temperature: Some(
+        0.5,
+    ),
+    top_p: Some(
+        1.0,
+    ),
+    stop: None,
+    stream: Some(
+        true,
+    ),
+    tools: None,
+    tool_choice: None,
+    reasoning_effort: None,
+}

@@ -1,8 +1,31 @@
+use crate::{
+    conversion::request::Request,
+    models::{
+        claude::{ClaudeTool, ClaudeToolChoice},
+        openai::{OpenAIMessage, OpenAIStreamChunk},
+    },
+};
+use futures_util::stream::Stream;
 use serde_json::Value;
-
-use crate::conversion::request::Request;
+use std::pin::Pin;
 
 pub trait Adapter: Send + Sync {
+    fn adapt_tools(
+        &self,
+        tools: Option<Vec<ClaudeTool>>,
+        _request: &Request,
+    ) -> Option<Vec<ClaudeTool>> {
+        tools
+    }
+
+    fn adapt_tool_choice(
+        &self,
+        tool_choice: Option<ClaudeToolChoice>,
+        _request: &Request,
+    ) -> Option<ClaudeToolChoice> {
+        tool_choice
+    }
+
     fn adapt_tool_schema(&self, schema: &Value, _request: &Request) -> Value {
         schema.clone()
     }
@@ -34,41 +57,28 @@ pub trait Adapter: Send + Sync {
     fn adapt_tool_result(&self, _tool_name: &str, tool_result: &str, _request: &Request) -> String {
         tool_result.to_string()
     }
-}
 
-impl<A: Adapter, B: Adapter> Adapter for (A, B) {
-    fn adapt_tool_schema(&self, schema: &Value, req: &Request) -> Value {
-        self.1
-            .adapt_tool_schema(&self.0.adapt_tool_schema(schema, req), req)
+    fn adapt_model(&self, model: &str, _request: &Request) -> String {
+        model.to_string()
     }
-    fn adapt_tool_description(&self, d: &str, req: &Request) -> String {
-        self.1
-            .adapt_tool_description(&self.0.adapt_tool_description(d, req), req)
+
+    fn adapt_messages(
+        &self,
+        messages: Vec<OpenAIMessage>,
+        _request: &Request,
+    ) -> Vec<OpenAIMessage> {
+        messages
     }
-    fn adapt_system_prompt(&self, p: &str, req: &Request) -> String {
-        self.1
-            .adapt_system_prompt(&self.0.adapt_system_prompt(p, req), req)
+
+    fn adapt_non_stream_response(&self, response: Value, _request: &Request) -> Value {
+        response
     }
-    fn adapt_user_prompt(&self, p: &str, req: &Request) -> String {
-        self.1
-            .adapt_user_prompt(&self.0.adapt_user_prompt(p, req), req)
-    }
-    fn adapt_temperature(&self, t: Option<f32>, req: &Request) -> Option<f32> {
-        self.1
-            .adapt_temperature(self.0.adapt_temperature(t, req), req)
-    }
-    fn adapt_top_p(&self, p: Option<f32>, req: &Request) -> Option<f32> {
-        self.1.adapt_top_p(self.0.adapt_top_p(p, req), req)
-    }
-    fn adapt_max_tokens(&self, m: u32, req: &Request) -> u32 {
-        self.1
-            .adapt_max_tokens(self.0.adapt_max_tokens(m, req), req)
-    }
-    fn adapt_tool_result(&self, tool_name: &str, tool_result: &str, req: &Request) -> String {
-        self.1.adapt_tool_result(
-            tool_name,
-            &self.0.adapt_tool_result(tool_name, tool_result, req),
-            req,
-        )
+
+    fn adapt_chunk_stream(
+        &self,
+        stream: Pin<Box<dyn Stream<Item = Result<OpenAIStreamChunk, reqwest::Error>> + Send>>,
+        _request: &Request,
+    ) -> Pin<Box<dyn Stream<Item = Result<OpenAIStreamChunk, reqwest::Error>> + Send>> {
+        stream
     }
 }
