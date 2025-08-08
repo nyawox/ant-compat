@@ -7,7 +7,10 @@ pub struct MessageDeltaUsage {
     pub input: u32,
     #[serde(rename = "output_tokens")]
     pub output: u32,
-    #[serde(skip_serializing_if = "Option::is_none", rename="cache_read_input_tokens")]
+    #[serde(
+        skip_serializing_if = "Option::is_none",
+        rename = "cache_read_input_tokens"
+    )]
     pub cache_read_input: Option<u32>,
 }
 
