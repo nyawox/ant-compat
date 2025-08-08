@@ -12,8 +12,9 @@ use futures_util::Stream;
 use self::{
     defaults::{
         DefaultSystemPromptAdapter, DefaultToolsAdapter, DefaultUserPromptAdapter,
-        GeminiToolSchemaAdapter, KimiMaxTokensAdapter, PseudoFunctionAdapter,
-        PseudoFunctionModelAdapter, PseudoFunctionResponseAdapter, PseudoFunctionToolAdapter,
+        GeminiToolSchemaAdapter, KimiMaxTokensAdapter, OAIReasoningModelAdapter,
+        PseudoFunctionAdapter, PseudoFunctionModelAdapter, PseudoFunctionResponseAdapter,
+        PseudoFunctionToolAdapter,
     },
     traits::Adapter,
 };
@@ -41,6 +42,8 @@ impl RequestAdapter {
         if is_kimi {
             adapters.push(Arc::new(KimiMaxTokensAdapter));
         }
+
+        adapters.push(Arc::new(OAIReasoningModelAdapter));
 
         if model.ends_with("-xml-tools") || model.ends_with("-bracket-tools") {
             adapters.push(Arc::new(PseudoFunctionAdapter));
@@ -125,10 +128,19 @@ impl RequestAdapter {
     }
 
     #[must_use]
-    pub fn adapt_max_tokens(&self, max_tokens: u32, req: &Request) -> u32 {
+    pub fn adapt_max_tokens(&self, max_tokens: u32, req: &Request) -> Option<u32> {
         self.adapters
             .iter()
-            .fold(max_tokens, |m, adapter| adapter.adapt_max_tokens(m, req))
+            .try_fold(max_tokens, |current_max, adapter| {
+                adapter.adapt_max_tokens(current_max, req)
+            })
+    }
+
+    #[must_use]
+    pub fn adapt_max_completion_tokens(&self, max_tokens: u32, req: &Request) -> Option<u32> {
+        self.adapters.iter().fold(None, |acc, adapter| {
+            acc.or_else(|| adapter.adapt_max_completion_tokens(max_tokens, req))
+        })
     }
 
     #[must_use]

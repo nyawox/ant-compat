@@ -89,11 +89,23 @@ pub struct OpenAIFunctionChoice {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct StreamOptions {
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub include_usage: Option<bool>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct OpenAIRequest {
     pub model: String,
     pub messages: Vec<OpenAIMessage>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub max_tokens: Option<u32>,
+    #[serde(
+        default,
+        skip_serializing_if = "Option::is_none",
+        rename = "max_completion_tokens"
+    )]
+    pub max_completion_tokens: Option<u32>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub temperature: Option<f32>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
@@ -108,6 +120,8 @@ pub struct OpenAIRequest {
     pub tool_choice: Option<OpenAIToolChoice>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub reasoning_effort: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub stream_options: Option<StreamOptions>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -116,7 +130,7 @@ pub struct OpenAIStreamChunk {
     #[serde(deserialize_with = "deserialize_null_as_default")]
     pub choices: Vec<OpenAIStreamChoice>,
     pub model: String,
-    #[serde(deserialize_with = "deserialize_null_as_default")]
+    #[serde(default, deserialize_with = "deserialize_null_as_default")]
     pub usage: OpenAIUsage,
 }
 

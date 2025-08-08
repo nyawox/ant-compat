@@ -3,9 +3,11 @@ use std::collections::HashMap;
 
 #[derive(Debug, Clone, Serialize, Deserialize, Default)]
 pub struct MessageDeltaUsage {
+    #[serde(rename = "input_tokens")]
     pub input: u32,
+    #[serde(rename = "output_tokens")]
     pub output: u32,
-    #[serde(skip_serializing_if = "Option::is_none")]
+    #[serde(skip_serializing_if = "Option::is_none", rename="cache_read_input_tokens")]
     pub cache_read_input: Option<u32>,
 }
 
@@ -17,7 +19,7 @@ pub struct PromptTokensDetails {
 #[derive(Debug, Default, Clone, Copy)]
 pub enum ActiveState {
     #[default]
-    NotStarted,
+    Idle,
     Thinking {
         content_index: u32,
     },
@@ -25,7 +27,6 @@ pub enum ActiveState {
         content_index: u32,
     },
     Tool,
-    Finished,
 }
 
 impl ActiveState {
@@ -47,6 +48,7 @@ pub struct StreamState {
     pub usage_data: MessageDeltaUsage,
     pub tool_calls: HashMap<u32, ToolCallState>,
     pub tool_index: Option<u32>,
+    pub finish_reason: Option<String>,
 }
 
 #[derive(Debug, Default, Clone)]

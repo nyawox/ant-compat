@@ -9,7 +9,7 @@ OpenAIRequest {
             role: "system",
             content: Some(
                 Text(
-                    "In this environment you have access to a set of tools you can use to answer the user's question. You can invoke functions by writing a \"<function_calls>\" block like the following as part of your reply.\n\n<function_calls>\n  <invoke name=\"$FUNCTION_NAME\">\n    <parameter name=\"$PARAMETER_NAME\">$PARAMETER_VALUE</parameter>\n...\n  </invoke>\n  <invoke name=\"$ANOTHER_FUNCTION_NAME\">\n    <parameter name=\"$PARAMETER_NAME\">$PARAMETER_VALUE</parameter>\n...\n  </invoke>\n</function_calls>\n\nYou can invoke multiple functions in parallel by including multiple <invoke> blocks within the same <function_calls> wrapper.\n\nParameter Formatting Rules:\n1.  **Scalar Values**: For simple types like strings, numbers, or booleans, provide the value directly.\n2.  **JSON Values**: For complex types like objects or arrays, you MUST wrap the JSON content in a markdown code block with a `json` tag.\n\nExample of a complex JSON parameter:\n<function_calls>\n  <invoke name=\"TodoWrite\">\n    <parameter name=\"todos\">\n```json\n[{\"id\":\"123\",\"content\":\"A complex task\",\"status\":\"pending\",\"priority\":\"high\"}]\n```\n    </parameter>\n  </invoke>\n</function_calls>\n\nWhen you call tools, place the <function_calls> block at the end of your response. Do not generate any text after the closing </function_calls> tag.\n\nHere are the functions available in JSONSchema format:\n<functions>\n<function>{\"description\":\"Get the current weather in a given location.\",\"name\":\"get_weather\",\"parameters\":{\"properties\":{\"location\":{\"description\":\"The city and state, e.g. San Francisco, CA\",\"type\":\"string\"}},\"required\":[\"location\"],\"type\":\"object\"}}</function>\n</functions>\n\nYou are a helpful assistant.",
+                    "In this environment you have access to a set of tools you can use to answer the user's question. You can invoke functions by writing a \"<function_calls>\" block like the following as part of your reply.\n\n<function_calls>\n  <invoke name=\"$FUNCTION_NAME\">\n    <parameter name=\"$PARAMETER_NAME\">$PARAMETER_VALUE</parameter>\n...\n  </invoke>\n  <invoke name=\"$ANOTHER_FUNCTION_NAME\">\n    <parameter name=\"$PARAMETER_NAME\">$PARAMETER_VALUE</parameter>\n...\n  </invoke>\n</function_calls>\n\nYou can invoke multiple functions in parallel by including multiple <invoke> blocks within the same <function_calls> wrapper.\n\nParameter Formatting Rules:\n1.  **Scalar Values**: For simple types like strings, numbers, or booleans, provide the value directly.\n2.  **JSON Values**: For complex types like objects or arrays, you MUST wrap the JSON content in a markdown code block with a `json` tag.\n\nExample of a complex JSON parameter:\n<function_calls>\n  <invoke name=\"TodoWrite\">\n    <parameter name=\"todos\">\n```json\n[{\"id\":\"123\",\"content\":\"A complex task\",\"status\":\"pending\",\"priority\":\"high\"}]\n```\n    </parameter>\n  </invoke>\n</function_calls>\n\nWhen you call tools, place the <function_calls> block at the end of your response. Do not generate any text after the closing </function_calls> tag.\n\nHere are the functions available in JSONSchema format:\n<functions>\n<function>\n{\n  \"description\": \"Get the current weather in a given location.\",\n  \"name\": \"get_weather\",\n  \"parameters\": {\n    \"properties\": {\n      \"location\": {\n        \"description\": \"The city and state, e.g. San Francisco, CA\",\n        \"type\": \"string\"\n      }\n    },\n    \"required\": [\n      \"location\"\n    ],\n    \"type\": \"object\"\n  }\n}\n</function>\n</functions>\n\nYou are a helpful assistant.",
                 ),
             ),
             tool_calls: None,
@@ -53,6 +53,7 @@ OpenAIRequest {
     max_tokens: Some(
         65536,
     ),
+    max_completion_tokens: None,
     temperature: Some(
         0.5,
     ),
@@ -66,4 +67,11 @@ OpenAIRequest {
     tools: None,
     tool_choice: None,
     reasoning_effort: None,
+    stream_options: Some(
+        StreamOptions {
+            include_usage: Some(
+                true,
+            ),
+        },
+    ),
 }

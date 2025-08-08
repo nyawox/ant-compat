@@ -40,8 +40,8 @@ impl Adapter for ClampTopPAdapter {
 
 struct AddTokensAdapter(u32);
 impl Adapter for AddTokensAdapter {
-    fn adapt_max_tokens(&self, max_tokens: u32, _request: &Request) -> u32 {
-        max_tokens + self.0
+    fn adapt_max_tokens(&self, max_tokens: u32, _request: &Request) -> Option<u32> {
+        Some(max_tokens + self.0)
     }
 }
 

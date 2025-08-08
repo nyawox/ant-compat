@@ -9,7 +9,7 @@ OpenAIRequest {
             role: "system",
             content: Some(
                 Text(
-                    "You have access to a set of tools to answer questions and complete tasks. Invoke them at the end of your response using this format:\n\n---TOOLS---\n[tool(ToolName, parameter=\"value\", another_parameter=\"value\")]\n[tool(AnotherTool, param1=\"value1\", param2=\"value2\")]\n[tool(ThirdTool, param=\"value\")]\n[tool(FourthTool, setting=\"value\", option=\"value\")]\n---END_TOOLS---\n\n## Rules\n- Place tool calls at the very end of your response, after a '---TOOLS---' separator\n- Each tool call must be on a new line\n- All parameter values must use double quotes\n- For multi-line content or strings with quotes, use triple quotes: \"\"\"content\"\"\"\n- Arrays and objects: wrap JSON payload in triple quotes: \"\"\"[...]\"\"\" or \"\"\"{\"properties\":{\"location\":{\"description\":\"The city and state, e.g. San Francisco, CA\",\"type\":\"string\"}},\"required\":[\"location\"],\"type\":\"object\"}\"\"\"\n- When possible, use parallel tool calls to perform multiple independent operations\n\n## Examples\n\nReading multiple files:\n---TOOLS---\n[tool(Read, file_path=\"/home/user/project/config.yaml\")]\n[tool(Read, file_path=\"/home/user/project/data.csv\")]\n[tool(Read, file_path=\"/home/user/project/settings.ini\")]\n---END_TOOLS---\n\nWriting todos with complex data:\n---TOOLS---\n[tool(TodoWrite, todos=\"\"\"[{\"id\": \"1\", \"content\": \"Review PR\", \"status\": \"pending\"}]\"\"\")]\n---END_TOOLS---\n\nMultiple tools:\n---TOOLS---\n[tool(Read, file_path=\"/config.json\")]\n[tool(TodoWrite, todos=\"\"\"[{\"id\": \"2\", \"content\": \"Update config\", \"priority\": \"high\"}]\"\"\")]\n---END_TOOLS---\n\n## Available Tools\n{\"properties\":{\"location\":{\"description\":\"The city and state, e.g. San Francisco, CA\",\"type\":\"string\"}},\"required\":[\"location\"],\"type\":\"object\"}\n\nYou are a helpful assistant.",
+                    "You have access to a set of tools to answer questions and complete tasks. Invoke them at the end of your response using this format:\n\n---TOOLS---\n[tool(ToolName, parameter=\"value\", another_parameter=\"value\")]\n[tool(AnotherTool, param1=\"value1\", param2=\"value2\")]\n[tool(ThirdTool, param=\"value\")]\n[tool(FourthTool, setting=\"value\", option=\"value\")]\n---END_TOOLS---\n\n## Rules\n- Place tool calls at the very end of your response, after a '---TOOLS---' separator\n- Each tool call must be on a new line\n- All parameter values must use double quotes\n- For multi-line content or strings with quotes, use triple quotes: \"\"\"content\"\"\"\n- Arrays and objects: wrap JSON payload in triple quotes: \"\"\"[...]\"\"\" or \"\"\"#**Tool**: `get_weather`\n#**Description:** Get the current weather in a given location.\n*#*Schema:**\n```json\n{\n  \"properties\": {\n    \"location\": {\n      \"description\": \"The city and state, e.g. San Francisco, CA\",\n      \"type\": \"string\"\n    }\n  },\n  \"required\": [\n    \"location\"\n  ],\n  \"type\": \"object\"\n}\n```\"\"\"\n- When possible, use parallel tool calls to perform multiple independent operations\n\n## Examples\n\nReading multiple files:\n---TOOLS---\n[tool(Read, file_path=\"/home/user/project/config.yaml\")]\n[tool(Read, file_path=\"/home/user/project/data.csv\")]\n[tool(Read, file_path=\"/home/user/project/settings.ini\")]\n---END_TOOLS---\n\nWriting todos with complex data:\n---TOOLS---\n[tool(TodoWrite, todos=\"\"\"[{\"id\": \"1\", \"content\": \"Review PR\", \"status\": \"pending\"}]\"\"\")]\n---END_TOOLS---\n\nMultiple tools:\n---TOOLS---\n[tool(Read, file_path=\"/config.json\")]\n[tool(TodoWrite, todos=\"\"\"[{\"id\": \"2\", \"content\": \"Update config\", \"priority\": \"high\"}]\"\"\")]\n---END_TOOLS---\n\n## Available Tools\n#**Tool**: `get_weather`\n#**Description:** Get the current weather in a given location.\n*#*Schema:**\n```json\n{\n  \"properties\": {\n    \"location\": {\n      \"description\": \"The city and state, e.g. San Francisco, CA\",\n      \"type\": \"string\"\n    }\n  },\n  \"required\": [\n    \"location\"\n  ],\n  \"type\": \"object\"\n}\n```\n\nYou are a helpful assistant.",
                 ),
             ),
             tool_calls: None,
@@ -53,6 +53,7 @@ OpenAIRequest {
     max_tokens: Some(
         65536,
     ),
+    max_completion_tokens: None,
     temperature: Some(
         0.5,
     ),
@@ -66,4 +67,11 @@ OpenAIRequest {
     tools: None,
     tool_choice: None,
     reasoning_effort: None,
+    stream_options: Some(
+        StreamOptions {
+            include_usage: Some(
+                true,
+            ),
+        },
+    ),
 }

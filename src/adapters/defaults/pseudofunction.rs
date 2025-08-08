@@ -257,19 +257,30 @@ impl PseudoFunctionAdapter {
                 "description": tool.description.clone().unwrap_or_default(),
                 "parameters": tool.input_schema.clone(),
             });
-            format!("<function>\n{}\n</function>", serde_json::to_string_pretty(&func).unwrap_or_default())
+            format!(
+                "<function>\n{}\n</function>",
+                serde_json::to_string_pretty(&func).unwrap_or_default()
+            )
         })
     }
 
     fn brackettools_system_prompt(system_prompt: &str, request: &Request) -> String {
-        generate_system_prompt(system_prompt, request, BRACKET_TOOLS_PROMPT, "\n\n", |tool| {
-            format!(
-                "#**Tool**: `{}`\n#**Description:** {}\n*#*Schema:**\n```json\n{}\n```",
-                tool.name,
-                tool.description.as_deref().unwrap_or("No description provided."),
-                serde_json::to_string_pretty(&tool.input_schema).unwrap_or_default()
-            )
-        })
+        generate_system_prompt(
+            system_prompt,
+            request,
+            BRACKET_TOOLS_PROMPT,
+            "\n\n",
+            |tool| {
+                format!(
+                    "#**Tool**: `{}`\n#**Description:** {}\n*#*Schema:**\n```json\n{}\n```",
+                    tool.name,
+                    tool.description
+                        .as_deref()
+                        .unwrap_or("No description provided."),
+                    serde_json::to_string_pretty(&tool.input_schema).unwrap_or_default()
+                )
+            },
+        )
     }
 }
 

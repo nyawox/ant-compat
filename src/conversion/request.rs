@@ -9,7 +9,7 @@ use crate::models::{
     openai::{
         OpenAIContent, OpenAIContentPart, OpenAIFunction, OpenAIFunctionChoice, OpenAIImageUrl,
         OpenAIMessage, OpenAIRequest, OpenAITool, OpenAIToolCall, OpenAIToolChoice,
-        OpenAIToolFunction,
+        OpenAIToolFunction, StreamOptions,
     },
 };
 
@@ -70,7 +70,8 @@ pub fn convert_claude_to_openai(
     let mut openai_request = OpenAIRequest {
         model: adapter.adapt_model(model_name, &req_clone),
         messages,
-        max_tokens: Some(claude_request.max_tokens),
+        max_tokens: None,
+        max_completion_tokens: None,
         temperature: claude_request.temperature,
         top_p: claude_request.top_p,
         stream: claude_request.stream,
@@ -78,6 +79,13 @@ pub fn convert_claude_to_openai(
         tools: None,
         tool_choice: None,
         reasoning_effort,
+        stream_options: if claude_request.stream.unwrap_or(false) {
+            Some(StreamOptions {
+                include_usage: Some(true),
+            })
+        } else {
+            None
+        },
     };
 
     let adapted_tools = adapter.adapt_tools(claude_request.tools, &req_clone);
@@ -94,9 +102,9 @@ pub fn convert_claude_to_openai(
 
     openai_request.temperature = adapter.adapt_temperature(openai_request.temperature, &req_clone);
     openai_request.top_p = adapter.adapt_top_p(openai_request.top_p, &req_clone);
-    if let Some(max_t) = openai_request.max_tokens {
-        openai_request.max_tokens = Some(adapter.adapt_max_tokens(max_t, &req_clone));
-    }
+    openai_request.max_tokens = adapter.adapt_max_tokens(claude_request.max_tokens, &req_clone);
+    openai_request.max_completion_tokens =
+        adapter.adapt_max_completion_tokens(claude_request.max_tokens, &req_clone);
 
     openai_request.messages = adapter.adapt_messages(openai_request.messages, &req_clone);
 

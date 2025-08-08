@@ -16,7 +16,7 @@ use crate::{
             ContentBlock, ContentBlockDelta, ContentBlockStart, ContentBlockStop, Delta,
             FinishReason, MessageDelta, MessageDeltaInfo, MessageStart, MessageStop,
         },
-        openai::{OpenAIDelta, OpenAIStreamChoice, OpenAIStreamChunk, OpenAIStreamToolCall},
+        openai::{OpenAIStreamChoice, OpenAIStreamChunk, OpenAIStreamToolCall},
         shared::{ActiveState, StreamState},
     },
 };
@@ -303,25 +303,36 @@ pub fn chunks_to_events(
         }
 
         let mut stream = chunk_stream.as_mut();
+        let mut last_state = state.state;
         while let Some(chunk_result) = stream.next().await {
             let chunk = match chunk_result {
                 Ok(c) => c,
-                Err(e) => { yield Err(e); break; }
+                Err(e) => {
+                    yield Err(e);
+                    break;
+                }
             };
-            if let ActiveState::Finished = state.state { break; }
+
             update_usage_from_chunk(&chunk, &mut state);
-            for choice in chunk.choices {
-                for event in state.process_choice(&choice) { yield Ok(event); }
+
+            if state.finish_reason.is_some() {
+                continue;
             }
+
+            for choice in chunk.choices {
+                for event in state.process_choice(&choice) {
+                    yield Ok(event);
+                }
+            }
+            last_state = state.state;
         }
 
-        if !matches!(state.state, ActiveState::Finished | ActiveState::Tool) {
-            let final_choice = OpenAIStreamChoice {
-                delta: OpenAIDelta::default(),
-                finish_reason: Some("stop".to_string()),
-                index: 0,
-            };
-            for event in state.process_choice(&final_choice) { yield Ok(event); }
+        if let Some(reason) = &state.finish_reason {
+            for event in emit_final_events(last_state, &state, reason) {
+                yield Ok(event);
+            }
+        } else {
+            error!("Stream ended prematurely without a finish reason");
         }
     })
 }
@@ -343,7 +354,7 @@ impl StreamState {
         context: &mut StreamState,
     ) -> (ActiveState, Vec<AnthropicStreamEvent>) {
         match current_state {
-            ActiveState::NotStarted => Self::handle_not_started(choice, context),
+            ActiveState::Idle => Self::handle_idle(choice, context),
             ActiveState::Thinking { content_index } => {
                 Self::handle_thinking(choice, content_index, context)
             }
@@ -351,11 +362,10 @@ impl StreamState {
                 Self::handle_text(choice, content_index, context)
             }
             ActiveState::Tool => Self::handle_tool(choice, context),
-            ActiveState::Finished => (ActiveState::Finished, vec![]),
         }
     }
 
-    fn handle_not_started(
+    fn handle_idle(
         choice: &OpenAIStreamChoice,
         context: &mut StreamState,
     ) -> (ActiveState, Vec<AnthropicStreamEvent>) {
@@ -365,8 +375,8 @@ impl StreamState {
         }
 
         if let Some(finish_reason) = &choice.finish_reason {
-            let final_events = emit_final_events(ActiveState::NotStarted, context, finish_reason);
-            return (ActiveState::Finished, final_events);
+            context.finish_reason = Some(finish_reason.clone());
+            return (ActiveState::Idle, vec![]);
         }
 
         if choice.delta.thinking.is_some() || choice.delta.reasoning.is_some() {
@@ -400,7 +410,7 @@ impl StreamState {
             return (new_state, events);
         }
 
-        (ActiveState::NotStarted, vec![])
+        (ActiveState::Idle, vec![])
     }
 
     fn handle_thinking(
@@ -417,12 +427,8 @@ impl StreamState {
         }
 
         if let Some(finish_reason) = &choice.finish_reason {
-            let final_events = emit_final_events(
-                ActiveState::Thinking { content_index },
-                context,
-                finish_reason,
-            );
-            return (ActiveState::Finished, final_events);
+            context.finish_reason = Some(finish_reason.clone());
+            return (ActiveState::Thinking { content_index }, vec![]);
         }
 
         if let Some(content) = &choice.delta.content
@@ -509,9 +515,8 @@ impl StreamState {
         }
 
         if let Some(finish_reason) = &choice.finish_reason {
-            let final_events =
-                emit_final_events(ActiveState::Text { content_index }, context, finish_reason);
-            return (ActiveState::Finished, final_events);
+            context.finish_reason = Some(finish_reason.clone());
+            return (ActiveState::Text { content_index }, vec![]);
         }
 
         if let Some(content) = &choice.delta.content
@@ -534,8 +539,8 @@ impl StreamState {
         context: &mut StreamState,
     ) -> (ActiveState, Vec<AnthropicStreamEvent>) {
         if let Some(finish_reason) = &choice.finish_reason {
-            let final_events = emit_final_events(ActiveState::Tool, context, finish_reason);
-            return (ActiveState::Finished, final_events);
+            context.finish_reason = Some(finish_reason.clone());
+            return (ActiveState::Tool, vec![]);
         }
 
         if choice.delta.content.is_some() {

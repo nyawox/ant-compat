@@ -50,8 +50,16 @@ pub trait Adapter: Send + Sync {
         top_p
     }
 
-    fn adapt_max_tokens(&self, max_tokens: u32, _request: &Request) -> u32 {
-        max_tokens
+    fn adapt_max_tokens(&self, max_tokens: u32, _request: &Request) -> Option<u32> {
+        Some(max_tokens)
+    }
+
+    fn adapt_max_completion_tokens(
+        &self,
+        _claude_max_tokens: u32,
+        _request: &Request,
+    ) -> Option<u32> {
+        None
     }
 
     fn adapt_tool_result(&self, _tool_name: &str, tool_result: &str, _request: &Request) -> String {

@@ -6,7 +6,7 @@ mod tools;
 
 pub use self::{
     gemini::GeminiToolSchemaAdapter,
-    parameters::KimiMaxTokensAdapter,
+    parameters::{KimiMaxTokensAdapter, OAIReasoningModelAdapter},
     prompt::{DefaultSystemPromptAdapter, DefaultUserPromptAdapter},
     pseudofunction::{
         PseudoFunctionAdapter, PseudoFunctionModelAdapter, PseudoFunctionResponseAdapter,

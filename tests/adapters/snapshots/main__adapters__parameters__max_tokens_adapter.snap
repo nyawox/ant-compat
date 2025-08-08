@@ -1,5 +1,7 @@
 ---
 source: tests/adapters/parameters.rs
-expression: "adapter.apply(1024, &request)"
+expression: "adapter.adapt_max_tokens(1024, &request)"
 ---
-1124
+Some(
+    1124,
+)
