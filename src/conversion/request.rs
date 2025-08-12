@@ -1,25 +1,20 @@
 use crate::adapters::RequestAdapter;
 use tracing::debug;
 pub type Request = ClaudeMessagesRequest;
-use crate::models::{
-    claude::{
-        ClaudeContent, ClaudeContentBlock, ClaudeMessage, ClaudeMessagesRequest, ClaudeSystem,
-        ClaudeTool, ClaudeToolChoice,
+use crate::{
+    models::{
+        claude::{
+            ClaudeContent, ClaudeContentBlock, ClaudeMessage, ClaudeMessagesRequest, ClaudeSystem,
+            ClaudeTool, ClaudeToolChoice,
+        },
+        openai::{
+            OpenAIContent, OpenAIContentPart, OpenAIFunction, OpenAIFunctionChoice, OpenAIImageUrl,
+            OpenAIMessage, OpenAIRequest, OpenAITool, OpenAIToolCall, OpenAIToolChoice,
+            OpenAIToolFunction, StreamOptions,
+        },
     },
-    openai::{
-        OpenAIContent, OpenAIContentPart, OpenAIFunction, OpenAIFunctionChoice, OpenAIImageUrl,
-        OpenAIMessage, OpenAIRequest, OpenAITool, OpenAIToolCall, OpenAIToolChoice,
-        OpenAIToolFunction, StreamOptions,
-    },
+    utils::map_budget_tokens_to_reasoning_effort,
 };
-
-fn map_budget_tokens_to_reasoning_effort(budget_tokens: u32) -> String {
-    match budget_tokens {
-        0..=1024 => "low".to_string(),
-        1025..=4096 => "medium".to_string(),
-        _ => "high".to_string(),
-    }
-}
 
 #[must_use]
 pub fn convert_claude_to_openai(

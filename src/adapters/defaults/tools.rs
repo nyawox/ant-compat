@@ -1,12 +1,6 @@
-use crate::{adapters::traits::Adapter, conversion::request::Request};
+use crate::{adapters::traits::Adapter, conversion::request::Request, lazy_regex};
 use regex::Regex;
 use std::sync::LazyLock;
-
-macro_rules! lazy_regex {
-    ($s:expr) => {
-        LazyLock::new(|| Regex::new($s).expect("Static regex pattern must be valid"))
-    };
-}
 
 const READ_TOOL_ENFORCEMENT: &str = "**MANDATORY**: Use the `Read` tool first to examine file's contents. This tool will error if you attempt an edit without reading the file first.";
 const EDIT_FAILURE_RULES: &str = "- Edit fails if `old_string` and `new_string` are identical. Either provide a larger string with more surrounding context to make it unique or use `replace_all` to change every instance of `old_string`

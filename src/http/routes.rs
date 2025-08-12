@@ -1,3 +1,4 @@
+use crate::directives::processor::DirectiveProcessor;
 use axum::{
     Json as JsonExtractor,
     body::Body,
@@ -5,7 +6,6 @@ use axum::{
     http::{HeaderMap, StatusCode},
     response::{IntoResponse, Json, Response},
 };
-
 use serde_json::{Value, json};
 use tracing::{debug, error, info};
 
@@ -103,9 +103,12 @@ async fn send_openai_request(
 pub async fn handle_messages(
     State(state): State<AppState>,
     headers: HeaderMap,
-    JsonExtractor(request): JsonExtractor<ClaudeMessagesRequest>,
+    JsonExtractor(mut request): JsonExtractor<ClaudeMessagesRequest>,
 ) -> impl IntoResponse {
     info!("Received request for model: {}", request.model);
+    // debug!("Handling messages request: {request:?}");
+
+    DirectiveProcessor::process(&mut request);
 
     let api_key = match extract_api_key(&headers) {
         Ok(key) => key,

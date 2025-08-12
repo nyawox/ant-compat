@@ -13,8 +13,8 @@ use self::{
     defaults::{
         DefaultSystemPromptAdapter, DefaultToolsAdapter, DefaultUserPromptAdapter,
         GeminiToolSchemaAdapter, KimiMaxTokensAdapter, OAIReasoningModelAdapter,
-        PseudoFunctionAdapter, PseudoFunctionModelAdapter, PseudoFunctionResponseAdapter,
-        PseudoFunctionToolAdapter,
+        ToolSimulationModelAdapter, ToolSimulationRequestAdapter, ToolSimulationResponseAdapter,
+        ToolSimulationToolAdapter,
     },
     traits::Adapter,
 };
@@ -34,7 +34,8 @@ impl RequestAdapter {
 
         let is_gemini = model.contains("gemini");
         let is_kimi = model.contains("moonshotai/kimi-k2-instruct")
-            && !env::var("DISABLE_GROQ_MAX_TOKENS").is_ok_and(|v| v == "1" || v == "true");
+            && !env::var("DISABLE_GROQ_MAX_TOKENS")
+                .is_ok_and(|value| value == "1" || value == "true");
 
         if is_gemini {
             adapters.push(Arc::new(GeminiToolSchemaAdapter));
@@ -46,30 +47,30 @@ impl RequestAdapter {
         adapters.push(Arc::new(OAIReasoningModelAdapter));
 
         if model.ends_with("-xml-tools") || model.ends_with("-bracket-tools") {
-            adapters.push(Arc::new(PseudoFunctionAdapter));
-            adapters.push(Arc::new(PseudoFunctionModelAdapter));
-            adapters.push(Arc::new(PseudoFunctionToolAdapter));
-            adapters.push(Arc::new(PseudoFunctionResponseAdapter));
+            adapters.push(Arc::new(ToolSimulationRequestAdapter));
+            adapters.push(Arc::new(ToolSimulationResponseAdapter));
+            adapters.push(Arc::new(ToolSimulationModelAdapter));
+            adapters.push(Arc::new(ToolSimulationToolAdapter));
         }
 
         Self { adapters }
     }
 
     #[must_use]
-    pub fn adapt_user_prompt(&self, user_prompt: &str, req: &Request) -> String {
+    pub fn adapt_user_prompt(&self, user_prompt: &str, request: &Request) -> String {
         self.adapters
             .iter()
             .fold(user_prompt.to_string(), |prompt, adapter| {
-                adapter.adapt_user_prompt(&prompt, req)
+                adapter.adapt_user_prompt(&prompt, request)
             })
     }
 
     #[must_use]
-    pub fn adapt_system_prompt(&self, system_prompt: &str, req: &Request) -> String {
+    pub fn adapt_system_prompt(&self, system_prompt: &str, request: &Request) -> String {
         self.adapters
             .iter()
             .fold(system_prompt.to_string(), |prompt, adapter| {
-                adapter.adapt_system_prompt(&prompt, req)
+                adapter.adapt_system_prompt(&prompt, request)
             })
     }
 
@@ -77,78 +78,91 @@ impl RequestAdapter {
     pub fn adapt_messages(
         &self,
         messages: Vec<OpenAIMessage>,
-        req: &Request,
+        request: &Request,
     ) -> Vec<OpenAIMessage> {
         self.adapters
             .iter()
-            .fold(messages, |msgs, adapter| adapter.adapt_messages(msgs, req))
+            .fold(messages, |messages, adapter| {
+                adapter.adapt_messages(messages, request)
+            })
     }
 
     #[must_use]
-    pub fn adapt_model(&self, model: &str, req: &Request) -> String {
+    pub fn adapt_model(&self, model: &str, request: &Request) -> String {
         self.adapters
             .iter()
-            .fold(model.to_string(), |m, adapter| adapter.adapt_model(&m, req))
+            .fold(model.to_string(), |model, adapter| {
+                adapter.adapt_model(&model, request)
+            })
     }
 
     #[must_use]
     pub fn adapt_tools(
         &self,
         tools: Option<Vec<crate::models::claude::ClaudeTool>>,
-        req: &Request,
+        request: &Request,
     ) -> Option<Vec<crate::models::claude::ClaudeTool>> {
         self.adapters
             .iter()
-            .fold(tools, |t, adapter| adapter.adapt_tools(t, req))
+            .fold(tools, |tools, adapter| adapter.adapt_tools(tools, request))
     }
 
     #[must_use]
     pub fn adapt_tool_choice(
         &self,
         tool_choice: Option<crate::models::claude::ClaudeToolChoice>,
-        req: &Request,
+        request: &Request,
     ) -> Option<crate::models::claude::ClaudeToolChoice> {
-        self.adapters.iter().fold(tool_choice, |tc, adapter| {
-            adapter.adapt_tool_choice(tc, req)
-        })
-    }
-
-    #[must_use]
-    pub fn adapt_temperature(&self, temperature: Option<f32>, req: &Request) -> Option<f32> {
-        self.adapters.iter().fold(temperature, |temp, adapter| {
-            adapter.adapt_temperature(temp, req)
-        })
-    }
-
-    #[must_use]
-    pub fn adapt_top_p(&self, top_p: Option<f32>, req: &Request) -> Option<f32> {
         self.adapters
             .iter()
-            .fold(top_p, |p, adapter| adapter.adapt_top_p(p, req))
-    }
-
-    #[must_use]
-    pub fn adapt_max_tokens(&self, max_tokens: u32, req: &Request) -> Option<u32> {
-        self.adapters
-            .iter()
-            .try_fold(max_tokens, |current_max, adapter| {
-                adapter.adapt_max_tokens(current_max, req)
+            .fold(tool_choice, |tool_choice, adapter| {
+                adapter.adapt_tool_choice(tool_choice, request)
             })
     }
 
     #[must_use]
-    pub fn adapt_max_completion_tokens(&self, max_tokens: u32, req: &Request) -> Option<u32> {
-        self.adapters.iter().fold(None, |acc, adapter| {
-            acc.or_else(|| adapter.adapt_max_completion_tokens(max_tokens, req))
+    pub fn adapt_temperature(&self, temperature: Option<f32>, request: &Request) -> Option<f32> {
+        self.adapters
+            .iter()
+            .fold(temperature, |temperature, adapter| {
+                adapter.adapt_temperature(temperature, request)
+            })
+    }
+
+    #[must_use]
+    pub fn adapt_top_p(&self, top_p: Option<f32>, request: &Request) -> Option<f32> {
+        self.adapters
+            .iter()
+            .fold(top_p, |top_p, adapter| adapter.adapt_top_p(top_p, request))
+    }
+
+    #[must_use]
+    pub fn adapt_max_tokens(&self, max_tokens: u32, request: &Request) -> Option<u32> {
+        self.adapters
+            .iter()
+            .try_fold(max_tokens, |max_tokens, adapter| {
+                adapter.adapt_max_tokens(max_tokens, request)
+            })
+    }
+
+    #[must_use]
+    pub fn adapt_max_completion_tokens(&self, max_tokens: u32, request: &Request) -> Option<u32> {
+        self.adapters.iter().fold(None, |accumulator, adapter| {
+            accumulator.or_else(|| adapter.adapt_max_completion_tokens(max_tokens, request))
         })
     }
 
     #[must_use]
-    pub fn adapt_tool_result(&self, tool_name: &str, tool_result: &str, req: &Request) -> String {
+    pub fn adapt_tool_result(
+        &self,
+        tool_name: &str,
+        tool_result: &str,
+        request: &Request,
+    ) -> String {
         self.adapters
             .iter()
-            .fold(tool_result.to_string(), |result, adapter| {
-                adapter.adapt_tool_result(tool_name, &result, req)
+            .fold(tool_result.to_string(), |tool_result, adapter| {
+                adapter.adapt_tool_result(tool_name, &tool_result, request)
             })
     }
 
@@ -156,21 +170,21 @@ impl RequestAdapter {
     pub fn adapt_tool_schema(
         &self,
         schema: &serde_json::Value,
-        req: &Request,
+        request: &Request,
     ) -> serde_json::Value {
         self.adapters
             .iter()
-            .fold(schema.clone(), |schema_val, adapter| {
-                adapter.adapt_tool_schema(&schema_val, req)
+            .fold(schema.clone(), |schema, adapter| {
+                adapter.adapt_tool_schema(&schema, request)
             })
     }
 
     #[must_use]
-    pub fn adapt_tool_description(&self, description: &str, req: &Request) -> String {
+    pub fn adapt_tool_description(&self, description: &str, request: &Request) -> String {
         self.adapters
             .iter()
-            .fold(description.to_string(), |desc, adapter| {
-                adapter.adapt_tool_description(&desc, req)
+            .fold(description.to_string(), |description, adapter| {
+                adapter.adapt_tool_description(&description, request)
             })
     }
 
@@ -178,10 +192,10 @@ impl RequestAdapter {
     pub fn adapt_non_stream_response(
         &self,
         response: serde_json::Value,
-        req: &Request,
+        request: &Request,
     ) -> serde_json::Value {
-        self.adapters.iter().fold(response, |resp, adapter| {
-            adapter.adapt_non_stream_response(resp, req)
+        self.adapters.iter().fold(response, |response, adapter| {
+            adapter.adapt_non_stream_response(response, request)
         })
     }
 
@@ -191,8 +205,8 @@ impl RequestAdapter {
         stream: Pin<Box<dyn Stream<Item = Result<OpenAIStreamChunk, reqwest::Error>> + Send>>,
         req: &Request,
     ) -> Pin<Box<dyn Stream<Item = Result<OpenAIStreamChunk, reqwest::Error>> + Send>> {
-        self.adapters.iter().fold(stream, |strm, adapter| {
-            adapter.adapt_chunk_stream(strm, req)
+        self.adapters.iter().fold(stream, |stream, adapter| {
+            adapter.adapt_chunk_stream(stream, req)
         })
     }
 }

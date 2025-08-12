@@ -1,12 +1,6 @@
-use crate::{adapters::traits::Adapter, conversion::request::Request};
+use crate::{adapters::traits::Adapter, conversion::request::Request, lazy_regex};
 use regex::Regex;
 use std::{borrow::Cow, sync::LazyLock};
-
-macro_rules! lazy_regex {
-    ($s:expr) => {
-        LazyLock::new(|| Regex::new($s).expect("Static regex pattern must be valid"))
-    };
-}
 
 static DEFENSIVE_SECURITY: LazyLock<Regex> = lazy_regex!(
     r"IMPORTANT: Assist with defensive security tasks only\. Refuse to create, modify, or improve code that may be used maliciously\. Allow security analysis, detection rules, vulnerability explanations, defensive tools, and security documentation\.\n"
@@ -110,7 +104,15 @@ Research task:
 
 <example>
 Rust project analysis:
-**WRONG** - Sequential execution (3 separate blocks):
+**WRONG** - Sequential execution (4 separate blocks):
+<function_calls>
+[LS(\".\")]
+</function_calls>
+<commentary>Analyze results, then proceed</commentary>
+<function_calls>
+[LS(\"src/\")]
+</function_calls>
+<commentary>Analyze results, then proceed</commentary>
 <function_calls>
 [Read(\"Cargo.toml\")]
 </function_calls>
@@ -118,52 +120,21 @@ Rust project analysis:
 <function_calls>
 [Read(\"src/main.rs\")]
 </function_calls>
-<commentary>Analyze results, then proceed</commentary>
+
+**CORRECT** - Parallel execution (6 operations in 1 block):
 <function_calls>
+[LS(\".\")]
 [LS(\"src/\")]
+[LS(\"tests/\")]
 </function_calls>
-
-**CORRECT** - Parallel execution (8 operations in 1 block):
+<commentary>Parse the directory structure first, then batch read the relevant files</commentary>
 <function_calls>
-[
-  Read(\"Cargo.toml\"),
-  Read(\"src/main.rs\"),
-  Read(\"src/lib.rs\"),
-  Read(\"src/error.rs\"),
-  Read(\"src/config.rs\"),
-  Read(\"src/handlers/mod.rs\"),
-  LS(\"src/\"),
-  LS(\"tests/\")
-]
-</function_calls>
-</example>
-
-<example>
-Go project exploration:
-**WRONG** - Sequential execution (3 separate blocks):
-<function_calls>
-[Read(\"go.mod\")]
-</function_calls>
-<commentary>Analyze structure, then search</commentary>
-<function_calls>
-[Grep(\"func main\", \"cmd/\")]
-</function_calls>
-<commentary>Wait for results, then read files</commentary>
-<function_calls>
-[Read(\"cmd/api/main.go\")]
-</function_calls>
-
-**CORRECT** - Parallel execution (7 operations in 1 block):
-<function_calls>
-[
-  Read(\"go.mod\"),
-  Read(\"cmd/api/main.go\"),
-  Read(\"internal/server/server.go\"),
-  Read(\"internal/database/db.go\"),
-  Read(\"internal/auth/auth.go\"),
-  Grep(\"func main\", \"cmd/\"),
-  LS(\"internal/\")
-]
+[Read(\"Cargo.toml\")]
+[Read(\"src/main.rs\")]
+[Read(\"src/lib.rs\")]
+[Read(\"src/error.rs\")]
+[Read(\"src/config.rs\")]
+[Read(\"src/handlers/mod.rs\")]
 </function_calls>
 </example>
 
@@ -193,27 +164,7 @@ Git operations:
 ]
 </function_calls>
 </example>
-
-<example>
-Subagent delegation:
-**WRONG** - Sequential execution (2 separate blocks):
-<function_calls>
-[Task(description=\"Database optimization\", prompt=\"Analyze SQL queries for performance improvements\", subagent_type=\"database_expert\")]
-</function_calls>
-<commentary>Wait for completion before starting next task</commentary>
-<function_calls>
-[Task(description=\"Security review\", prompt=\"Check for XSS vulnerabilities in frontend code\", subagent_type=\"security_expert\")]
-</function_calls>
-
-**CORRECT** - Parallel execution (3 tasks in 1 block):
-<function_calls>
-[
-  Task(description=\"Database optimization\", prompt=\"Analyze SQL queries for performance improvements\", subagent_type=\"database_expert\"),
-  Task(description=\"Security review\", prompt=\"Check for XSS vulnerabilities in frontend code\", subagent_type=\"security_expert\"),
-  Task(description=\"API consistency\", prompt=\"Review REST endpoints for naming conventions\", subagent_type=\"api_expert\")
-]
-</function_calls>
-</example>";
+";
 
 fn is_openai_model(model: &str) -> bool {
     match model {

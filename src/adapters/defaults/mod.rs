@@ -1,16 +1,16 @@
 mod gemini;
 mod parameters;
 mod prompt;
-mod pseudofunction;
+pub mod tool_simulation;
 mod tools;
 
 pub use self::{
     gemini::GeminiToolSchemaAdapter,
     parameters::{KimiMaxTokensAdapter, OAIReasoningModelAdapter},
     prompt::{DefaultSystemPromptAdapter, DefaultUserPromptAdapter},
-    pseudofunction::{
-        PseudoFunctionAdapter, PseudoFunctionModelAdapter, PseudoFunctionResponseAdapter,
-        PseudoFunctionToolAdapter,
+    tool_simulation::{
+        model::ToolSimulationModelAdapter, request::ToolSimulationRequestAdapter,
+        response::ToolSimulationResponseAdapter, tools::ToolSimulationToolAdapter,
     },
     tools::DefaultToolsAdapter,
 };

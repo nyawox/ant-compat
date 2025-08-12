@@ -8,9 +8,11 @@ use tracing::info;
 
 mod adapters;
 mod conversion;
+mod directives;
 mod http;
 mod logging;
 mod models;
+mod utils;
 
 use http::handle_messages;
 

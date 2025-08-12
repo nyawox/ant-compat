@@ -20,7 +20,7 @@ async fn mock_response_from_chunks(chunks: Vec<OpenAIStreamChunk>) -> reqwest::R
         .map(|chunk| {
             let json = serde_json::to_string(&chunk)
                 .expect("Serialization of a test data struct should not fail");
-            format!("data: {}\n\n", json)
+            format!("data: {json}\n\n")
         })
         .collect::<String>()
         .into_bytes();

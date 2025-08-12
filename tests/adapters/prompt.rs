@@ -1,23 +1,14 @@
+use crate::helpers::load_system_prompt_fixture;
 use ant_compat::{
     adapters::{defaults::DefaultSystemPromptAdapter, traits::Adapter},
     conversion::request::Request,
+    lazy_regex,
     models::claude::ClaudeMessagesRequest,
 };
 use insta::assert_snapshot;
 use regex::Regex;
 use rstest::rstest;
-use saphyr::{LoadableYamlNode, ScalarOwned, YamlOwned};
-use std::{fs, path::Path};
-
-fn load_prompt() -> Option<YamlOwned> {
-    let path = Path::new("tests/fixtures/system_prompt.yaml");
-    if let Ok(content) = fs::read_to_string(path) {
-        if let Ok(mut docs) = YamlOwned::load_from_str(&content) {
-            return Some(docs.remove(0));
-        }
-    }
-    None
-}
+use std::sync::LazyLock;
 
 fn dummy_request() -> ClaudeMessagesRequest {
     ClaudeMessagesRequest {
@@ -60,43 +51,33 @@ impl Adapter for UppercaseAdapter {
     }
 }
 
+static REDACTION_REGEX: LazyLock<Regex> = lazy_regex!(r"AIzaSy[\w\-]{33,34}");
+
 struct RedactionAdapter;
 impl Adapter for RedactionAdapter {
     fn adapt_user_prompt(&self, prompt: &str, _request: &Request) -> String {
-        if let Ok(re) = Regex::new(r"AIzaSy[\w\-]{33,34}") {
-            re.replace_all(prompt, "[REDACTED]").to_string()
-        } else {
-            prompt.to_string()
-        }
+        REDACTION_REGEX
+            .replace_all(prompt, "[REDACTED]")
+            .to_string()
     }
 }
 
 #[rstest]
 fn test_system_prompt() {
-    if let Some(YamlOwned::Mapping(map)) = load_prompt() {
-        if let Some(YamlOwned::Value(ScalarOwned::String(prompt))) =
-            map.get(&YamlOwned::Value(ScalarOwned::String("prompt".into())))
-        {
-            let adapter = DefaultSystemPromptAdapter;
-            let request = dummy_request();
-            let result = adapter.adapt_system_prompt(prompt, &request);
-            assert_snapshot!(result);
-        }
-    }
+    let prompt = load_system_prompt_fixture();
+    let adapter = DefaultSystemPromptAdapter;
+    let request = dummy_request();
+    let result = adapter.adapt_system_prompt(&prompt, &request);
+    assert_snapshot!(result);
 }
 
 #[rstest]
 fn test_system_prompt_oai() {
-    if let Some(YamlOwned::Mapping(map)) = load_prompt() {
-        if let Some(YamlOwned::Value(ScalarOwned::String(prompt))) =
-            map.get(&YamlOwned::Value(ScalarOwned::String("prompt".into())))
-        {
-            let adapter = DefaultSystemPromptAdapter;
-            let request = dummy_oai_request();
-            let result = adapter.adapt_system_prompt(prompt, &request);
-            assert_snapshot!(result);
-        }
-    }
+    let prompt = load_system_prompt_fixture();
+    let adapter = DefaultSystemPromptAdapter;
+    let request = dummy_oai_request();
+    let result = adapter.adapt_system_prompt(&prompt, &request);
+    assert_snapshot!(result);
 }
 
 #[test]

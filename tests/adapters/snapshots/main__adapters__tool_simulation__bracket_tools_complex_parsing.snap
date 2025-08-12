@@ -1,5 +1,5 @@
 ---
-source: tests/adapters/pseudofunction.rs
+source: tests/adapters/tool_simulation.rs
 expression: events
 ---
 [

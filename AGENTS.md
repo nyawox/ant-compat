@@ -43,6 +43,7 @@ nix build .#checks.x86_64-linux.clippy
 ### Core Components
 
 - `main.rs`: Server setup with Axum HTTP framework, CORS configuration, and application state
+- `lib.rs`: Exports used for tests only. Do not use this library path within the binary. unify all imports to crate::
 - `http/routes.rs`: Main message handling logic with Claude-to-OpenAI conversion
 - `models/`: Type definitions for both Claude and OpenAI API formats
   - `claude.rs`: Claude API request/response structures

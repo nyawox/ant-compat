@@ -1,5 +1,5 @@
 ---
-source: tests/adapters/pseudofunction.rs
+source: tests/adapters/tool_simulation.rs
 expression: events
 ---
 [
@@ -10,7 +10,7 @@ expression: events
                 message_type: "message",
                 role: "assistant",
                 content: [],
-                model: "google/gemini-2.5-pro-bracket-tools",
+                model: "google/gemini-2.5-pro-xml-tools",
                 stop_reason: None,
                 stop_sequence: None,
                 usage: ClaudeStreamUsage {
@@ -55,7 +55,7 @@ expression: events
         ContentBlockDelta {
             index: 1,
             delta: InputJson {
-                partial_json: "{}",
+                partial_json: "{\"location\":\"SF\"}",
             },
         },
     ),

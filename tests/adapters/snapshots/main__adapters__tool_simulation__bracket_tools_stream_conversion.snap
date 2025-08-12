@@ -1,5 +1,5 @@
 ---
-source: tests/adapters/pseudofunction.rs
+source: tests/adapters/tool_simulation.rs
 expression: events
 ---
 [
@@ -10,7 +10,7 @@ expression: events
                 message_type: "message",
                 role: "assistant",
                 content: [],
-                model: "google/gemini-2.5-pro-xml-tools",
+                model: "google/gemini-2.5-pro-bracket-tools",
                 stop_reason: None,
                 stop_sequence: None,
                 usage: ClaudeStreamUsage {
@@ -32,7 +32,7 @@ expression: events
         ContentBlockDelta {
             index: 0,
             delta: Text {
-                text: "Thinking about the weather... ",
+                text: "Thinking...\n",
             },
         },
     ),
