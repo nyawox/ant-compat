@@ -80,8 +80,8 @@ async fn send_openai_request(
     api_key: &str,
     openai_request: &OpenAIRequest,
 ) -> Result<reqwest::Response, Response> {
-    let client = reqwest::Client::new();
-    client
+    state
+        .http_client
         .post(format!("{}/chat/completions", state.openai_base_url))
         .header("Content-Type", "application/json")
         .header("Authorization", format!("Bearer {api_key}"))

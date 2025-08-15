@@ -71,6 +71,9 @@ nix build .#checks.x86_64-linux.clippy
 - `OPENAI_BASE_URL`: Backend endpoint URL (default: `http://127.0.0.1:10152/v1`)
 - Server binds to `0.0.0.0:8080`
 - Haiku model requests are mapped to `openai/gpt-4.1-mini`
+- `CONNECTION_TIMEOUT`: Timeout for establishing the initial TCP connection. Defaults to `10`.
+- `IDLE_CONNECTION_TIMEOUT`: How long an idle, keep-alive connection can remain in the pool before being closed. Defaults to `60`.
+- Rate limiting and concurrency control are explictly out of scope. should be handled by upstream api gateways, ingress controllers or load balancers.
 
 ### Adapter Design Philosophy
 

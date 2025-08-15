@@ -82,13 +82,14 @@ fn parse_antml_content(response_text: &str, tool_calls_start: usize) -> ParsedTo
                     (current_tool_call.as_mut(), current_param_name.as_ref())
                 {
                     let value_str = String::from_utf8_lossy(event.as_ref()).into_owned();
-                    let mut is_json = false;
+                    // is_json was originally added to check ```json and autocorrect the contents, historically
+                    let mut is_json = is_potential_json_literal(&value_str);
                     let processed_value_str =
                         if let Some(captures) = JSON_CODE_BLOCK_REGEX.captures(&value_str) {
                             is_json = true;
                             captures.get(1).map_or("", |mat| mat.as_str())
                         } else {
-                            value_str.trim()
+                            value_str.as_str()
                         };
 
                     tool_call.args.insert(
@@ -208,7 +209,9 @@ pub fn parse_single_bracket_tool_call(slice: &str) -> Option<ParsedToolCall> {
                 } else {
                     continue;
                 };
-                args.insert(key, parse_value(&value_str, true));
+                // is_json was actually used to check ```json in xml tools, historically
+                let is_json = is_potential_json_literal(&value_str);
+                args.insert(key, parse_value(&value_str, is_json));
             }
         }
     }
@@ -257,6 +260,18 @@ pub fn build_non_stream_response(parsed: ParsedToolResponse) -> Value {
     }
 
     Value::Object(message_map)
+}
+
+fn is_potential_json_literal(value: &str) -> bool {
+    let trimmed = value.trim();
+    if trimmed.starts_with('{')
+        || trimmed.starts_with('[')
+        || trimmed.ends_with('}')
+        || trimmed.ends_with(']')
+    {
+        return true;
+    }
+    matches!(trimmed, "true" | "false" | "null") || serde_json::from_str::<Value>(trimmed).is_ok()
 }
 
 fn parse_value(value_str: &str, is_json: bool) -> Value {

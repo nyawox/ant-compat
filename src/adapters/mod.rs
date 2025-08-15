@@ -80,11 +80,9 @@ impl RequestAdapter {
         messages: Vec<OpenAIMessage>,
         request: &Request,
     ) -> Vec<OpenAIMessage> {
-        self.adapters
-            .iter()
-            .fold(messages, |messages, adapter| {
-                adapter.adapt_messages(messages, request)
-            })
+        self.adapters.iter().fold(messages, |messages, adapter| {
+            adapter.adapt_messages(messages, request)
+        })
     }
 
     #[must_use]

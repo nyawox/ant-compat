@@ -6,7 +6,7 @@ use crate::{
         openai::{OpenAIContent, OpenAIMessage},
     },
 };
-use serde_json::{json, Map, Value};
+use serde_json::{Map, Value, json};
 
 const XML_TOOLS_PROMPT: &str = r#"In this environment you have access to a set of tools you can use to answer the user's question. You can invoke functions by writing a "<function_calls>" block like the following as part of your reply.
 
@@ -57,8 +57,11 @@ const BRACKET_TOOLS_PROMPT: &str = r#"You have access to a set of tools to answe
 ## Rules
 - Place tool calls at the very end of your response, after a '---TOOLS---' separator
 - Each tool call must be on a new line
-- All parameter values must use double quotes
-- For multi-line content or strings with quotes, use triple quotes: """content"""
+- ALL parameter values must use quotes:
+  * Strings: double quotes ("value")
+  * Numbers: double quotes ("123", "42")
+  * Booleans: double quotes ("true", "false")
+- For multi-line content or strings with nested quotes, use triple quotes: """content"""
 - Arrays and objects: wrap JSON payload in triple quotes: """[...]""" or """{}"""
 - When possible, use parallel tool calls to perform multiple independent operations
 

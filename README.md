@@ -5,9 +5,11 @@ built for centralized, multi-user deployments, it passes API keys directly to th
 Simply configure your environment variables `ANTHROPIC_BASE_URL`, `ANTHROPIC_API_KEY`, choose the model `/model name` and start coding.
 
 ## Environment Variables:
-- `OPENAI_BASE_URL` Sets the upstream URL for the backend API
-- `HAIKU_MODEL` Sets the default model to be used for background haiku requests
+- `OPENAI_BASE_URL` Sets the upstream URL for the backend API.
+- `HAIKU_MODEL` Sets the default model to be used for background haiku requests. Defaults to `openai/gpt-4.1-mini`
 - `DISABLE_GROQ_MAX_TOKENS` Self explanatory, disables the groq kimi k2 workaround
+- `CONNECTION_TIMEOUT` Timeout for establishing the initial TCP connection. Defaults to `10`.
+- `IDLE_CONNECTION_TIMEOUT` How long an idle, keep-alive connection can remain in the pool before being closed. Defaults to `60`.
 
 ## Features:
 - Multi user support with API key passthrough: Forwards API keys directly, no manual provider/model mapping.

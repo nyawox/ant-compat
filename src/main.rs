@@ -1,6 +1,8 @@
 use anyhow::Result;
 use axum::{Router, routing::post};
+use reqwest::Client;
 use std::env;
+use std::time::Duration;
 use tokio::net::TcpListener;
 use tower::ServiceBuilder;
 use tower_http::cors::CorsLayer;
@@ -20,6 +22,7 @@ use http::handle_messages;
 pub struct AppState {
     pub openai_base_url: String,
     pub default_haiku_model: String,
+    pub http_client: Client,
 }
 
 #[tokio::main]
@@ -32,9 +35,25 @@ async fn main() -> Result<()> {
     let default_haiku_model =
         env::var("HAIKU_MODEL").unwrap_or_else(|_| "openai/gpt-4.1-mini".to_string());
 
+    let http_client = Client::builder()
+        .connect_timeout(Duration::from_secs(
+            env::var("CONNECTION_TIMEOUT")
+                .ok()
+                .and_then(|s| s.parse().ok())
+                .unwrap_or(10),
+        ))
+        .pool_idle_timeout(Duration::from_secs(
+            env::var("IDLE_CONNECTION_TIMEOUT")
+                .ok()
+                .and_then(|s| s.parse().ok())
+                .unwrap_or(60),
+        ))
+        .build()?;
+
     let state = AppState {
         openai_base_url,
         default_haiku_model,
+        http_client,
     };
 
     let app = Router::new()

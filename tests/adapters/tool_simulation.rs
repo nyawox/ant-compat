@@ -624,3 +624,29 @@ async fn verify_bracket_tools_json_repair() {
     )
     .await;
 }
+
+#[tokio::test]
+async fn verify_bracket_tools_numeric_string_parsing() {
+    let chunks = vec![OpenAIStreamChunk {
+        id: "1".to_string(),
+        choices: vec![OpenAIStreamChoice {
+            index: 0,
+            delta: OpenAIDelta {
+                content: Some(
+                    r#"---TOOLS---[tool(get_commit, sha="285e2cd")]---END_TOOLS---"#.to_string(),
+                ),
+                ..Default::default()
+            },
+            finish_reason: Some("tool_calls".to_string()),
+        }],
+        model: "google/gemini-2.5-pro".to_string(),
+        usage: OpenAIUsage::default(),
+    }];
+
+    run_stream_conversion_test(
+        "google/gemini-2.5-pro-bracket-tools",
+        chunks,
+        "bracket_tools_numeric_string_parsing",
+    )
+    .await;
+}

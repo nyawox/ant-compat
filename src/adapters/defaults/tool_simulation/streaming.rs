@@ -210,7 +210,9 @@ impl StreamingToolParser {
         let mut calls = Vec::new();
         if let ParserState::InToolBlock { buffer } = &mut self.state {
             drain_complete_calls(&*self.grammar, buffer, &mut calls);
-            if !buffer.is_empty() && let Some(call) = self.grammar.parse_partial_on_finalize(buffer) {
+            if !buffer.is_empty()
+                && let Some(call) = self.grammar.parse_partial_on_finalize(buffer)
+            {
                 calls.push(call);
             }
         }
