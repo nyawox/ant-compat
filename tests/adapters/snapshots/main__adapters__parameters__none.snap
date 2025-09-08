@@ -1,0 +1,5 @@
+---
+source: tests/adapters/parameters.rs
+expression: "adapter.apply(input, &request)"
+---
+None

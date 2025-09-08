@@ -1,0 +1,73 @@
+---
+source: tests/adapters/tool_simulation.rs
+expression: "&result"
+---
+OpenAIRequest {
+    model: "google/gemini-2.5-pro",
+    messages: [
+        OpenAIMessage {
+            role: "system",
+            content: Some(
+                Text(
+                    "You have access to a set of tools to answer questions and complete tasks. Invoke them at the end of your response using this format:\n\n<formatting_guide>\n---TOOLS---\n[tool(ToolName, parameter=\"\"\"value\"\"\", another_parameter=\"\"\"value123\"\"\", enabled=\"true\")]\n[tool(AnotherTool, param1=\"\"\"value1\"\"\", param2=\"\"\"value2\"\"\", count=\"42\")]\n[tool(ThirdTool, param=\"\"\"value\"\"\", active=\"false\")]\n[tool(FourthTool, setting=\"\"\"value\"\"\", option=\"\"\"value\"\"\", priority=\"1\")]\n---END_TOOLS---\n</formatting_guide>\n\n* **Rules:**\n  * All tool calls must be enclosed between '---TOOLS---'...'---END_TOOLS---' block\n  * Each tool call must be on a new line\n  * **ALL parameter values must use quotes:**\n    * Strings (any text or symbols): triple double quotes (\"\"\"value\"\"\")\n    * Numbers: double quotes (\"123\", \"42\")\n    * Booleans: double quotes (\"true\", \"false\")\n    * Arrays and objects: wrap entire JSON payload in triple double quotes (\"\"\"[...]\"\"\" or \"\"\"{{...}}\"\"\")\n  * Never rely on internal knowledge, even for known information. Always use tools to verify.\n  * Use tools throughout your reasoning to gather information, test assumptions, and build your response step by step\n  * Tool calls always refer to the EXACT syntax shown in the examples below. Any other format is invalid and must not be generated\n\n**Examples:**\n\n**Reading multiple files:**\n<example>\n---TOOLS---\n[tool(Read, file_path=\"\"\"/home/user/project/config.yaml\"\"\")]\n[tool(Read, file_path=\"\"\"/home/user/project/data.csv\"\"\")]\n[tool(Read, file_path=\"\"\"/home/user/project/settings.ini\"\"\")]\n---END_TOOLS---\n</example>\n\n**Writing todos with complex data:**\n<example>\n---TOOLS---\n[tool(TodoWrite, todos=\"\"\"[{\"id\": \"1\", \"content\": \"Review PR\", \"status\": \"pending\"}]\"\"\")]\n---END_TOOLS---\n</example>\n\n**Multiple tools:**\n<example>\n---TOOLS---\n[tool(Read, file_path=\"\"\"/config.json\"\"\")]\n[tool(TodoWrite, todos=\"\"\"[{\"id\": \"2\", \"content\": \"Update config\", \"priority\": \"high\"}]\"\"\")]\n---END_TOOLS---\n</example>\n\n**Available Tools:**\n**Tool Name:** `get_weather`\n\n**Tool Description:** Get the current weather in a given location.\n\n**Tool Schema:**\n\n```json\n{\n  \"properties\": {\n    \"location\": {\n      \"description\": \"The city and state, e.g. San Francisco, CA\",\n      \"type\": \"string\"\n    }\n  },\n  \"required\": [\n    \"location\"\n  ],\n  \"type\": \"object\"\n}\n```\n\n\n\nYou are a helpful assistant.",
+                ),
+            ),
+            tool_calls: None,
+            tool_call_id: None,
+        },
+        OpenAIMessage {
+            role: "user",
+            content: Some(
+                Text(
+                    "What is the weather like in San Francisco?",
+                ),
+            ),
+            tool_calls: None,
+            tool_call_id: None,
+        },
+        OpenAIMessage {
+            role: "assistant",
+            content: Some(
+                Text(
+                    "I'll get the weather for you.\n\n---TOOLS---\n[tool(get_weather, location=\"San Francisco\")]\n---END_TOOLS---",
+                ),
+            ),
+            tool_calls: None,
+            tool_call_id: None,
+        },
+        OpenAIMessage {
+            role: "user",
+            content: Some(
+                Text(
+                    "[tool_result(name=\"get_weather\", result=\"\"\"{\"temperature\":\"72F\"}\"\"\")]",
+                ),
+            ),
+            tool_calls: None,
+            tool_call_id: None,
+        },
+    ],
+    max_tokens: Some(
+        65536,
+    ),
+    max_completion_tokens: None,
+    temperature: Some(
+        0.5,
+    ),
+    top_p: Some(
+        1.0,
+    ),
+    stop: None,
+    stream: Some(
+        true,
+    ),
+    tools: None,
+    tool_choice: None,
+    reasoning_effort: None,
+    stream_options: Some(
+        StreamOptions {
+            include_usage: Some(
+                true,
+            ),
+        },
+    ),
+}

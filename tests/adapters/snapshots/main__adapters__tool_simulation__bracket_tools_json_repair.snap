@@ -1,0 +1,62 @@
+---
+source: tests/adapters/tool_simulation.rs
+expression: events
+---
+[
+    MessageStart(
+        MessageStart {
+            message: ClaudeStreamMessage {
+                id: "[redacted-id]",
+                message_type: "message",
+                role: "assistant",
+                content: [],
+                model: "google/gemini-2.5-pro-bracket-tools",
+                stop_reason: None,
+                stop_sequence: None,
+                usage: ClaudeStreamUsage {
+                    input_tokens: 0,
+                    output_tokens: 0,
+                },
+            },
+        },
+    ),
+    ContentBlockStart(
+        ContentBlockStart {
+            index: 0,
+            content_block: ToolUse {
+                id: "[redacted-tool-id]",
+                name: "MultiEdit",
+                input: Object {},
+            },
+        },
+    ),
+    ContentBlockDelta(
+        ContentBlockDelta {
+            index: 0,
+            delta: InputJson {
+                partial_json: "{\"edits\":[{\"new_string\":\"b\",\"old_string\":\"a\"}]}",
+            },
+        },
+    ),
+    ContentBlockStop(
+        ContentBlockStop {
+            index: 0,
+        },
+    ),
+    MessageDelta(
+        MessageDelta {
+            delta: MessageDeltaInfo {
+                stop_reason: "tool_use",
+                stop_sequence: None,
+            },
+            usage: MessageDeltaUsage {
+                input: 0,
+                output: 0,
+                cache_read_input: None,
+            },
+        },
+    ),
+    MessageStop(
+        MessageStop,
+    ),
+]

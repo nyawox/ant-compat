@@ -1,0 +1,9 @@
+/target
+/tests/fixtures/
+/tests/adapters/snapshots/main__adapters__tools__*.snap
+/tests/adapters/snapshots/main__adapters__tools__*.snap.new
+/tests/adapters/snapshots/main__adapters__prompt__system*.snap
+/tests/adapters/snapshots/main__adapters__prompt__system*.snap.new
+/tests/directives/snapshots/main__directives__*.snap
+/tests/directives/snapshots/main__directives__*.snap.new
+ant-compat

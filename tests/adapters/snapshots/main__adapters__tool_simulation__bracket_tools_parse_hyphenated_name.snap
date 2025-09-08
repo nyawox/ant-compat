@@ -1,0 +1,8 @@
+---
+source: tests/adapters/tool_simulation.rs
+expression: "&call"
+---
+ParsedToolCall {
+    name: "mcp__mcp__searxng-search",
+    args: {},
+}
