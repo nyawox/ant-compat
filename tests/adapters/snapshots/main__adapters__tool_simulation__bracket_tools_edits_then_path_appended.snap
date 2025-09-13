@@ -25,7 +25,7 @@ expression: events
             index: 0,
             content_block: ToolUse {
                 id: "[redacted-tool-id]",
-                name: "Test",
+                name: "MultiEdit",
                 input: Object {},
             },
         },
@@ -34,59 +34,13 @@ expression: events
         ContentBlockDelta {
             index: 0,
             delta: InputJson {
-                partial_json: "{\"edits\":[{\"new_string=\\\"fix_by_removing_the_test\\\"\":\"\",\"old_string=\\\"failing_test\\\"\":\"\"}],\"json\":{\"key\":\"value with quotes\"},\"path\":\"/var/lib/secrets/postgres-production.yaml\"}",
+                partial_json: "{\"edits\":[{\"new_string\":\"b\",\"old_string\":\"a\"}],\"file_path\":\"/app/main.rs\"}",
             },
         },
     ),
     ContentBlockStop(
         ContentBlockStop {
             index: 0,
-        },
-    ),
-    ContentBlockStart(
-        ContentBlockStart {
-            index: 1,
-            content_block: ToolUse {
-                id: "[redacted-tool-id]",
-                name: "NoArgs",
-                input: Object {},
-            },
-        },
-    ),
-    ContentBlockDelta(
-        ContentBlockDelta {
-            index: 1,
-            delta: InputJson {
-                partial_json: "{}",
-            },
-        },
-    ),
-    ContentBlockStop(
-        ContentBlockStop {
-            index: 1,
-        },
-    ),
-    ContentBlockStart(
-        ContentBlockStart {
-            index: 2,
-            content_block: ToolUse {
-                id: "[redacted-tool-id]",
-                name: "WithParens",
-                input: Object {},
-            },
-        },
-    ),
-    ContentBlockDelta(
-        ContentBlockDelta {
-            index: 2,
-            delta: InputJson {
-                partial_json: "{\"arg\":\"(value)\"}",
-            },
-        },
-    ),
-    ContentBlockStop(
-        ContentBlockStop {
-            index: 2,
         },
     ),
     MessageDelta(

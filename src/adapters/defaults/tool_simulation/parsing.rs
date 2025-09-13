@@ -185,7 +185,7 @@ pub fn parse_bracket_tool(slice: &str) -> Option<ParsedToolCall> {
     enum ArgValue {
         Quoted(String),
         Triple(String),
-        Bare,
+        Bare(String),
     }
 
     let tool_name = any()
@@ -215,7 +215,7 @@ pub fn parse_bracket_tool(slice: &str) -> Option<ParsedToolCall> {
         .repeated()
         .at_least(1)
         .collect::<String>()
-        .map(|_| ArgValue::Bare);
+        .map(ArgValue::Bare);
 
     let value = triple.or(quoted).or(bare).padded();
 
@@ -246,11 +246,12 @@ pub fn parse_bracket_tool(slice: &str) -> Option<ParsedToolCall> {
             Map::new(),
             |mut arguments_map, (argument_name, argument_value)| {
                 match argument_value {
-                    ArgValue::Quoted(value_text) | ArgValue::Triple(value_text) => {
+                    ArgValue::Quoted(value_text)
+                    | ArgValue::Triple(value_text)
+                    | ArgValue::Bare(value_text) => {
                         let is_json = is_potential_json_literal(&value_text);
                         arguments_map.insert(argument_name, parse_value(&value_text, is_json));
                     }
-                    ArgValue::Bare => {}
                 }
                 arguments_map
             },

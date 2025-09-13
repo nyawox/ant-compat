@@ -20,19 +20,10 @@ nix run
 
 ```bash
 # Run tests and review snapshots
-cargo insta test
+cargo insta test --check
 
 # Accept all snapshots
 cargo insta accept
-
-# Show a specific snapshot
-cargo insta show
-
-# Reject all snapshots
-cargo insta reject
-
-# Print a summary of all pending snapshots
-cargo insta pending-snapshots
 
 # Run clippy (required before commits)
 nix build .#checks.x86_64-linux.clippy

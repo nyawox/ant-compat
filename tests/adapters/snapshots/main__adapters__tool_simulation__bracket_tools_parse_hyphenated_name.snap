@@ -4,5 +4,7 @@ expression: "&call"
 ---
 ParsedToolCall {
     name: "mcp__mcp__searxng-search",
-    args: {},
+    args: {
+        "query": String("\\\"rust\\\""),
+    },
 }

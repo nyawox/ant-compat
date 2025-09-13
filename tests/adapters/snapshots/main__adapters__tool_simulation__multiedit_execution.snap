@@ -32,7 +32,7 @@ expression: events
         ContentBlockDelta {
             index: 0,
             delta: Text {
-                text: "Thinking...\n",
+                text: "<end_cot>\n",
             },
         },
     ),
@@ -46,7 +46,7 @@ expression: events
             index: 1,
             content_block: ToolUse {
                 id: "[redacted-tool-id]",
-                name: "get_weather",
+                name: "MultiEdit",
                 input: Object {},
             },
         },
@@ -55,59 +55,13 @@ expression: events
         ContentBlockDelta {
             index: 1,
             delta: InputJson {
-                partial_json: "{\"location\":\"San Francisco\"}",
+                partial_json: "{\"edits\":[{\"new_string\":\"bar\",\"old_string\":\"foo\"},{\"new_string\":\"qux\",\"old_string\":\"baz\"}],\"file_path\":\"src/ue-bridge.go\"}",
             },
         },
     ),
     ContentBlockStop(
         ContentBlockStop {
             index: 1,
-        },
-    ),
-    ContentBlockStart(
-        ContentBlockStart {
-            index: 2,
-            content_block: ToolUse {
-                id: "[redacted-tool-id]",
-                name: "get_weather",
-                input: Object {},
-            },
-        },
-    ),
-    ContentBlockDelta(
-        ContentBlockDelta {
-            index: 2,
-            delta: InputJson {
-                partial_json: "{\"location\":\"Germany/FrankFurt\"}",
-            },
-        },
-    ),
-    ContentBlockStop(
-        ContentBlockStop {
-            index: 2,
-        },
-    ),
-    ContentBlockStart(
-        ContentBlockStart {
-            index: 3,
-            content_block: ToolUse {
-                id: "[redacted-tool-id]",
-                name: "get_weather",
-                input: Object {},
-            },
-        },
-    ),
-    ContentBlockDelta(
-        ContentBlockDelta {
-            index: 3,
-            delta: InputJson {
-                partial_json: "{\"location\":\"Norway/Oslo\"}",
-            },
-        },
-    ),
-    ContentBlockStop(
-        ContentBlockStop {
-            index: 3,
         },
     ),
     MessageDelta(

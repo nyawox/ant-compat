@@ -55,7 +55,7 @@ expression: events
         ContentBlockDelta {
             index: 1,
             delta: InputJson {
-                partial_json: "{}",
+                partial_json: "{\"location\":\"SF\"}",
             },
         },
     ),

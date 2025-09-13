@@ -420,6 +420,60 @@ async fn verify_bracket_tools_stream_conversion() {
             choices: vec![OpenAIStreamChoice {
                 index: 0,
                 delta: OpenAIDelta {
+                    content: Some(
+                        "[tool(get_weather, location=\"\"\"Germany/FrankFurt\"\"\")]\n".to_string(),
+                    ),
+                    ..Default::default()
+                },
+                finish_reason: None,
+            }],
+            model: "google/gemini-2.5-pro".to_string(),
+            usage: OpenAIUsage::default(),
+        },
+        OpenAIStreamChunk {
+            id: "5".to_string(),
+            choices: vec![OpenAIStreamChoice {
+                index: 0,
+                delta: OpenAIDelta {
+                    content: Some("[tool(get_weather,".to_string()),
+                    ..Default::default()
+                },
+                finish_reason: None,
+            }],
+            model: "google/gemini-2.5-pro".to_string(),
+            usage: OpenAIUsage::default(),
+        },
+        OpenAIStreamChunk {
+            id: "6".to_string(),
+            choices: vec![OpenAIStreamChoice {
+                index: 0,
+                delta: OpenAIDelta {
+                    content: Some("location=\"".to_string()),
+                    ..Default::default()
+                },
+                finish_reason: None,
+            }],
+            model: "google/gemini-2.5-pro".to_string(),
+            usage: OpenAIUsage::default(),
+        },
+        OpenAIStreamChunk {
+            id: "7".to_string(),
+            choices: vec![OpenAIStreamChoice {
+                index: 0,
+                delta: OpenAIDelta {
+                    content: Some("\"\"Norway/Oslo\"\"\")]\n".to_string()),
+                    ..Default::default()
+                },
+                finish_reason: None,
+            }],
+            model: "google/gemini-2.5-pro".to_string(),
+            usage: OpenAIUsage::default(),
+        },
+        OpenAIStreamChunk {
+            id: "8".to_string(),
+            choices: vec![OpenAIStreamChoice {
+                index: 0,
+                delta: OpenAIDelta {
                     content: Some("---END_TOOLS---".to_string()),
                     ..Default::default()
                 },
@@ -460,7 +514,7 @@ async fn verify_bracket_tools_complex_parsing() {
                 index: 0,
                 delta: OpenAIDelta {
                     content: Some(
-                        r#"[tool(Test, json="""{"key": "value with quotes"}""")]"#.to_string(),
+                        r#"[tool(Test, json="""{"key": "value with quotes"}""""#.to_string(),
                     ),
                     ..Default::default()
                 },
@@ -474,7 +528,9 @@ async fn verify_bracket_tools_complex_parsing() {
             choices: vec![OpenAIStreamChoice {
                 index: 0,
                 delta: OpenAIDelta {
-                    content: Some(r#"[tool(NoArgs)]"#.to_string()),
+                    content: Some(
+                        r#", path="""/var/lib/secrets/postgres-production.yaml""", edits="""[{old_string="failing_test", new_string="fix_by_removing_the_test"}]""")]"#.to_string(),
+                    ),
                     ..Default::default()
                 },
                 finish_reason: None,
@@ -487,7 +543,7 @@ async fn verify_bracket_tools_complex_parsing() {
             choices: vec![OpenAIStreamChoice {
                 index: 0,
                 delta: OpenAIDelta {
-                    content: Some(r#"[tool(WithParens, arg="(value)")]"#.to_string()),
+                    content: Some(r#"[tool(NoArgs)]"#.to_string()),
                     ..Default::default()
                 },
                 finish_reason: None,
@@ -497,6 +553,19 @@ async fn verify_bracket_tools_complex_parsing() {
         },
         OpenAIStreamChunk {
             id: "5".to_string(),
+            choices: vec![OpenAIStreamChoice {
+                index: 0,
+                delta: OpenAIDelta {
+                    content: Some(r#"[tool(WithParens, arg="(value)")]"#.to_string()),
+                    ..Default::default()
+                },
+                finish_reason: None,
+            }],
+            model: "google/gemini-2.5-pro".to_string(),
+            usage: OpenAIUsage::default(),
+        },
+        OpenAIStreamChunk {
+            id: "6".to_string(),
             choices: vec![OpenAIStreamChoice {
                 index: 0,
                 delta: OpenAIDelta {
@@ -761,6 +830,178 @@ async fn verify_xml_tools_html_inside_json_array() {
         "google/gemini-2.5-pro-xml-tools",
         chunks,
         "xml_tools_html_inside_json_array",
+    )
+    .await;
+}
+
+#[tokio::test]
+async fn verify_bracket_tools_array_before_string() {
+    let chunks = vec![
+        OpenAIStreamChunk {
+            id: "1".to_string(),
+            choices: vec![OpenAIStreamChoice {
+                index: 0,
+                delta: OpenAIDelta {
+                    content: Some("---TOOLS---\n".to_string()),
+                    ..Default::default()
+                },
+                finish_reason: None,
+            }],
+            model: "google/gemini-2.5-pro".to_string(),
+            usage: OpenAIUsage::default(),
+        },
+        OpenAIStreamChunk {
+            id: "2".to_string(),
+            choices: vec![OpenAIStreamChoice {
+                index: 0,
+                delta: OpenAIDelta {
+                    content: Some(
+                        r#"[tool(MultiEdit, edits="""[{"old_string":"a","new_string":"b"}]""""#
+                            .to_string(),
+                    ),
+                    ..Default::default()
+                },
+                finish_reason: None,
+            }],
+            model: "google/gemini-2.5-pro".to_string(),
+            usage: OpenAIUsage::default(),
+        },
+        OpenAIStreamChunk {
+            id: "3".to_string(),
+            choices: vec![OpenAIStreamChoice {
+                index: 0,
+                delta: OpenAIDelta {
+                    content: Some(r#", file_path="""/app/main.rs""")]"#.to_string()),
+                    ..Default::default()
+                },
+                finish_reason: None,
+            }],
+            model: "google/gemini-2.5-pro".to_string(),
+            usage: OpenAIUsage::default(),
+        },
+        OpenAIStreamChunk {
+            id: "4".to_string(),
+            choices: vec![OpenAIStreamChoice {
+                index: 0,
+                delta: OpenAIDelta {
+                    content: Some("---END_TOOLS---".to_string()),
+                    ..Default::default()
+                },
+                finish_reason: Some("tool_calls".to_string()),
+            }],
+            model: "google/gemini-2.5-pro".to_string(),
+            usage: OpenAIUsage::default(),
+        },
+    ];
+
+    run_stream_conversion_test(
+        "google/gemini-2.5-pro-bracket-tools",
+        chunks,
+        "bracket_tools_array_before_string",
+    )
+    .await;
+}
+
+#[tokio::test]
+async fn verify_bracket_tools_multiedit_execution() {
+    let chunks = vec![
+        OpenAIStreamChunk {
+            id: "1".to_string(),
+            choices: vec![OpenAIStreamChoice {
+                index: 0,
+                delta: OpenAIDelta {
+                    content: Some("<end_cot>\n---TOOLS---\n".to_string()),
+                    ..Default::default()
+                },
+                finish_reason: None,
+            }],
+            model: "google/gemini-2.5-pro".to_string(),
+            usage: OpenAIUsage::default(),
+        },
+        OpenAIStreamChunk {
+            id: "2".to_string(),
+            choices: vec![OpenAIStreamChoice {
+                index: 0,
+                delta: OpenAIDelta {
+                    content: Some("[tool(MultiEdit, file_path=\"\"\"".to_string()),
+                    ..Default::default()
+                },
+                finish_reason: None,
+            }],
+            model: "google/gemini-2.5-pro".to_string(),
+            usage: OpenAIUsage::default(),
+        },
+        OpenAIStreamChunk {
+            id: "3".to_string(),
+            choices: vec![OpenAIStreamChoice {
+                index: 0,
+                delta: OpenAIDelta {
+                    content: Some("src/ue-bridge.go\"\"\", edits=\"\"\"[".to_string()),
+                    ..Default::default()
+                },
+                finish_reason: None,
+            }],
+            model: "google/gemini-2.5-pro".to_string(),
+            usage: OpenAIUsage::default(),
+        },
+        OpenAIStreamChunk {
+            id: "4".to_string(),
+            choices: vec![OpenAIStreamChoice {
+                index: 0,
+                delta: OpenAIDelta {
+                    content: Some("{\"old_string\":\"foo\",\"new_string\":\"bar\"},".to_string()),
+                    ..Default::default()
+                },
+                finish_reason: None,
+            }],
+            model: "google/gemini-2.5-pro".to_string(),
+            usage: OpenAIUsage::default(),
+        },
+        OpenAIStreamChunk {
+            id: "5".to_string(),
+            choices: vec![OpenAIStreamChoice {
+                index: 0,
+                delta: OpenAIDelta {
+                    content: Some("{\"old_string\":\"baz\",\"new_string\":\"qux\"}]".to_string()),
+                    ..Default::default()
+                },
+                finish_reason: None,
+            }],
+            model: "google/gemini-2.5-pro".to_string(),
+            usage: OpenAIUsage::default(),
+        },
+        OpenAIStreamChunk {
+            id: "6".to_string(),
+            choices: vec![OpenAIStreamChoice {
+                index: 0,
+                delta: OpenAIDelta {
+                    content: Some("\"\"\")]".to_string()),
+                    ..Default::default()
+                },
+                finish_reason: None,
+            }],
+            model: "google/gemini-2.5-pro".to_string(),
+            usage: OpenAIUsage::default(),
+        },
+        OpenAIStreamChunk {
+            id: "7".to_string(),
+            choices: vec![OpenAIStreamChoice {
+                index: 0,
+                delta: OpenAIDelta {
+                    content: Some("---END_TOOLS---".to_string()),
+                    ..Default::default()
+                },
+                finish_reason: Some("tool_calls".to_string()),
+            }],
+            model: "google/gemini-2.5-pro".to_string(),
+            usage: OpenAIUsage::default(),
+        },
+    ];
+
+    run_stream_conversion_test(
+        "google/gemini-2.5-pro-bracket-tools",
+        chunks,
+        "multiedit_execution",
     )
     .await;
 }

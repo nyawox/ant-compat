@@ -671,6 +671,34 @@ impl StreamingToolParser {
                     self.bracket_state.last_emit = buffer.len();
                 }
                 self.scan_bracket(&mut buffer, events);
+                if self.bracket_state.active {
+                    if let (Some(index), Some(start_abs)) =
+                        (self.bracket_state.index, self.bracket_state.start_index)
+                    {
+                        let tail = if start_abs <= buffer.len() {
+                            &buffer[start_abs..]
+                        } else {
+                            ""
+                        };
+                        let trimmed = tail.trim_end();
+                        let candidate = if trimmed.ends_with(")]") {
+                            trimmed.to_string()
+                        } else {
+                            format!("{trimmed})]")
+                        };
+                        if let Some(call) = super::parsing::parse_bracket_tool(&candidate) {
+                            let delta = serde_json::to_string(&call.args).unwrap_or_default();
+                            events.push(ToolEvent::Arg { index, delta });
+                        } else {
+                            events.push(ToolEvent::Arg {
+                                index,
+                                delta: "{}".to_string(),
+                            });
+                        }
+                        events.push(ToolEvent::End);
+                    }
+                    self.bracket_state = BracketIncState::default();
+                }
             }
             events.push(ToolEvent::ToolsBlockEnd);
             return (ParserState::Passthrough, true);
